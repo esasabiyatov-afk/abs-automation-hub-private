@@ -1,0 +1,45 @@
+{
+  "customer": {
+    "abs_id": true,
+    "full_name": true,
+    "passport": true,
+    "inn": true,
+    "residence_address": true,
+    "registration_address": true,
+    "birth_date": true,
+    "phones": true,
+    "account_count": true,
+    "accounts": true
+  },
+  "passport": {
+    "document_type": true,
+    "series": true,
+    "number": true,
+    "issued_by": true,
+    "issue_date": true,
+    "valid_until": true
+  },
+  "legal": {
+    "abs_id": true,
+    "company_name": true,
+    "legal_form": true,
+    "inn": true,
+    "okpo": true,
+    "registration_number": true,
+    "registration_date": true,
+    "registration_authority": true,
+    "legal_address": true,
+    "actual_address": true,
+    "phones": true,
+    "account_count": true,
+    "accounts": true
+  },
+  "account": {
+    "status": true,
+    "currency": true,
+    "name": true,
+    "number": true,
+    "open_date": true,
+    "close_date": true
+  }
+}

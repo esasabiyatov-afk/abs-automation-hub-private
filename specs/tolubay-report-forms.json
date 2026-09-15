@@ -1,0 +1,2561 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-20T14:34:57.598Z",
+  "base_path": "/OnlineBank.Management.MVC",
+  "privacy": {
+    "business_values_captured": false,
+    "large_select_option_labels_captured": false
+  },
+  "main_reports": [
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/CashIncomeJournalReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "disabled": false,
+              "name": "FileFormat.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "User.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "User.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "User.Value",
+              "optionCount": 165,
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "ReportDate.Date",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Кассовый журнал по приходу",
+      "label": "Кассовый журнал по приходу",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/CashIncomeJournalReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/CashWithdrawalJournalReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "disabled": false,
+              "name": "FileFormat.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "User.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "User.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "User.Value",
+              "optionCount": 165,
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "ReportDate.Date",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Кассовый журнал по расходу",
+      "label": "Кассовый журнал по расходу",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/CashWithdrawalJournalReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/MemorialOrderReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "disabled": false,
+              "name": "FileFormat.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "User.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "User.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "User.Value",
+              "optionCount": 174,
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "OfficeUsersOperations.Value",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "OfficeUsersOperations.Value",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "IncludeFinalTurnovers.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "IncludeFinalTurnovers.Value",
+              "type": "hidden"
+            },
+            {
+              "disabled": false,
+              "name": "ReportDate.Date",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Сводный мемориальный ордер",
+      "label": "Сводный мемориальный ордер",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/MemorialOrderReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/BalanceGroupsTurnoversReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "disabled": false,
+              "name": "FileFormat.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "User.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "User.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "User.Value",
+              "optionCount": 165,
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "ReportDate.Date",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Сводная справка по оборотам",
+      "label": "Сводная справка по оборотам",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/BalanceGroupsTurnoversReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/TransactionsJournalReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "Period.StartDate",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "Period.EndDate",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "DtPattern.Value",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "CtPattern.Value",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "ExcludeRevaluationTransactions.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "ExcludeRevaluationTransactions.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": true,
+              "name": "ExcludeBranchesGrouping.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "ExcludeBranchesGrouping.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Сводная выписка по проводкам",
+      "label": "Сводная выписка по проводкам",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/TransactionsJournalReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/AccountsStatementReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "disabled": false,
+              "name": "AccountNos.Value",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "Period.StartDate",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "Period.EndDate",
+              "type": "text"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "DisplaySummaryBalancesEachDay.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "DisplaySummaryBalancesEachDay.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "DisplaySummaryTurnoversEachDay.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "DisplaySummaryTurnoversEachDay.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "ExcludeAccountsWithoutTurnovers.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "ExcludeAccountsWithoutTurnovers.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "ExcludeRevaluationTransactions.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "ExcludeRevaluationTransactions.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Сводная выписка по счету",
+      "label": "Сводная выписка по счету",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/AccountsStatementReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/TransactionsByBalanceGroupsReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "Period.StartDate",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "Period.EndDate",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Сводный журнал операций",
+      "label": "Сводный журнал операций",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/TransactionsByBalanceGroupsReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/BalanceGroupsStatementReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "BalanceGroups.Value",
+              "type": "text"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "Period.StartDate",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "Period.EndDate",
+              "type": "text"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "DisplaySummaryBalancesEachDay.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "DisplaySummaryBalancesEachDay.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "DisplaySummaryTurnoversEachDay.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "DisplaySummaryTurnoversEachDay.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "ExcludeAccountsWithoutTurnovers.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "ExcludeAccountsWithoutTurnovers.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "ExcludeRevaluationTransactions.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "ExcludeRevaluationTransactions.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Сводная выписка по балансовым группам",
+      "label": "Сводная выписка по балансовым группам",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/BalanceGroupsStatementReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/BalanceSheetStatementReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "disabled": false,
+              "name": "FileFormat.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "BalanceGroup.Value",
+              "type": "text"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "IncludeFinalTurnovers.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "IncludeFinalTurnovers.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "IncludeAccountsWithZeroBalances.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "IncludeAccountsWithZeroBalances.Value",
+              "type": "hidden"
+            },
+            {
+              "disabled": false,
+              "name": "ReportDate.Date",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Сальдовая ведомость",
+      "label": "Сальдовая ведомость",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/BalanceSheetStatementReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/TurnoverBalanceSheetByAccountsReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "BalanceGroups.Value",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "AccountGroups.Value",
+              "type": "text"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "IncludeFinalTurnovers.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "IncludeFinalTurnovers.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": true,
+              "name": "IncludeSummariesByAllAccounts.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "IncludeSummariesByAllAccounts.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "DisplayCalculationsInNationalCurrency.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "DisplayCalculationsInNationalCurrency.Value",
+              "type": "hidden"
+            },
+            {
+              "disabled": false,
+              "name": "Period.StartDate",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "Period.EndDate",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Оборотно-сальдовая ведомость по лицевым счетам",
+      "label": "Оборотно-сальдовая ведомость по лицевым счетам",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/TurnoverBalanceSheetByAccountsReport",
+      "presentation": "modal"
+    },
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/TurnoverBalanceSheetByGroupsReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Currency.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": true,
+              "name": "Currency.Value",
+              "optionCount": 6,
+              "options": [
+                {
+                  "text": "CNY",
+                  "value": "156"
+                },
+                {
+                  "text": "EUR",
+                  "value": "978"
+                },
+                {
+                  "text": "KGS",
+                  "value": "417"
+                },
+                {
+                  "text": "KZT",
+                  "value": "398"
+                },
+                {
+                  "text": "RUB",
+                  "value": "643"
+                },
+                {
+                  "text": "USD",
+                  "value": "840"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "BalanceGroups.Value",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "AccountGroups.Value",
+              "type": "text"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "IncludeFinalTurnovers.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "IncludeFinalTurnovers.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": true,
+              "name": "IncludeSummariesByAllAccounts.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "IncludeSummariesByAllAccounts.Value",
+              "type": "hidden"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "DisplayCalculationsInNationalCurrency.Value",
+              "type": "checkbox",
+              "value": "true"
+            },
+            {
+              "disabled": false,
+              "name": "DisplayCalculationsInNationalCurrency.Value",
+              "type": "hidden"
+            },
+            {
+              "disabled": false,
+              "name": "Period.StartDate",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "Period.EndDate",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Оборотно-сальдовая ведомость по балансовым группам",
+      "label": "Оборотно-сальдовая ведомость по балансовым группам",
+      "linkPatterns": [],
+      "path": "/OnlineBank.Management.MVC/TurnoverBalanceSheetByGroupsReport",
+      "presentation": "modal"
+    }
+  ],
+  "special_reports": [
+    {
+      "controls": [
+        {
+          "disabled": true,
+          "id": null,
+          "name": null,
+          "tag": "input",
+          "text": "Файл не выбран",
+          "type": "text"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": "ko_unique_1",
+          "tag": "input",
+          "text": "",
+          "type": "file"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "Сгенерировать отчет",
+          "type": "submit"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "input",
+          "text": "21.08.2026",
+          "type": "text"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "input",
+          "text": "on",
+          "type": "checkbox"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "input",
+          "text": "on",
+          "type": "checkbox"
+        }
+      ],
+      "forms": [],
+      "heading": "Отчет с использованием шаблонов",
+      "label": "Отчет с использованием шаблонов",
+      "links": [],
+      "path": "/OnlineBank.Management.MVC/Management/ExcelTemplatesReport",
+      "presentation": "page"
+    },
+    {
+      "controls": [
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "Сохранить",
+          "type": "submit"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "Добавить",
+          "type": "button"
+        },
+        {
+          "disabled": true,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "Удалить",
+          "type": "button"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "Обновить",
+          "type": "button"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "Toggle Dropdown",
+          "type": "button"
+        },
+        {
+          "disabled": true,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "Сформировать отчет",
+          "type": "button"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "Загрузить данные",
+          "type": "button"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "select",
+          "text": "-Все-Общий",
+          "type": "select-one"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "button",
+          "text": "-Все-",
+          "type": "button"
+        },
+        {
+          "disabled": false,
+          "id": null,
+          "name": null,
+          "tag": "input",
+          "text": "1",
+          "type": "text"
+        }
+      ],
+      "forms": [],
+      "heading": "Дополнительные отчёты",
+      "label": "Дополнительные отчеты",
+      "links": [
+        {
+          "path": "/OnlineBank.Management.MVC/Management/AdditionalReport",
+          "text": "Очистить фильтр"
+        },
+        {
+          "path": "/OnlineBank.Management.MVC/Management/AdditionalReport",
+          "text": "Очистить сортировку"
+        },
+        {
+          "path": "/OnlineBank.Management.MVC/Management/AdditionalReport",
+          "text": "Очистить все"
+        }
+      ],
+      "path": "/OnlineBank.Management.MVC/Management/AdditionalReport",
+      "presentation": "page"
+    }
+  ],
+  "loans_reports": [
+    {
+      "buttons": [
+        "Выполнить",
+        "Отмена"
+      ],
+      "forms": [
+        {
+          "action": "/OnlineBank.Management.MVC/Loans/OverduesDepartmentsReport/Execute",
+          "enctype": "application/x-www-form-urlencoded",
+          "fields": [
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Branch.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Branch.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "БФ АКБ \"ТОЛУБАЙ\"",
+                  "value": "1022"
+                },
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "5"
+                },
+                {
+                  "text": "Филиал ЗАО АКБ \"Толубай\" \"Толубай - Запад\"",
+                  "value": "1021"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "True"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Office.All",
+              "type": "radio",
+              "value": "False"
+            },
+            {
+              "disabled": false,
+              "name": "Office.Value",
+              "optionCount": 3,
+              "options": [
+                {
+                  "text": "ЗАО АКБ Толубай",
+                  "value": "19"
+                },
+                {
+                  "text": "Сберегательная касса № 1",
+                  "value": "1057"
+                },
+                {
+                  "text": "Сберегательная касса № 3",
+                  "value": "1058"
+                }
+              ],
+              "type": "select-one"
+            },
+            {
+              "disabled": false,
+              "name": "ReportDate.Date",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "MinOverdueDay.Value",
+              "type": "text"
+            },
+            {
+              "disabled": false,
+              "name": "MinOverdueSumN.Value",
+              "type": "text"
+            },
+            {
+              "checked": true,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "PDF"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLS"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "name": "Value",
+              "type": "radio",
+              "value": "XLSX"
+            }
+          ],
+          "method": "POST"
+        }
+      ],
+      "heading": "Отчет по просроченным кредитам по ответственным подразделениям",
+      "label": "Отчет по просроченным кредитам по ответственным подразделениям",
+      "path": "/OnlineBank.Management.MVC/Loans/OverduesDepartmentsReport",
+      "presentation": "modal"
+    }
+  ],
+  "additional_dynamic_reports": {
+    "count": 3,
+    "job_path": "/OnlineBank.Management.MVC/Management/AdditionalReportJob",
+    "method": "POST",
+    "transport": "redirectWithParameter",
+    "opens_new_window": true,
+    "parameters": [
+      "ReportName",
+      "ReportType",
+      "DateFrom",
+      "DateTo",
+      "returnUrl"
+    ],
+    "forms": [
+      {
+        "controls": [
+          {
+            "dataBind": "date: reportParameter.DateFrom ",
+            "disabled": false,
+            "id": null,
+            "name": "DateFrom",
+            "tag": "input",
+            "text": null,
+            "type": "text"
+          },
+          {
+            "dataBind": "date: reportParameter.DateTo",
+            "disabled": false,
+            "id": null,
+            "name": "DateTo",
+            "tag": "input",
+            "text": null,
+            "type": "text"
+          },
+          {
+            "dataBind": "safeClick:generateReportApply",
+            "disabled": false,
+            "id": null,
+            "name": null,
+            "tag": "button",
+            "text": "Выполнить",
+            "type": "submit"
+          },
+          {
+            "dataBind": null,
+            "disabled": false,
+            "id": null,
+            "name": null,
+            "tag": "button",
+            "text": "Отмена",
+            "type": "button"
+          }
+        ],
+        "heading": "Актив пассив и другие отчеты (новая версия)",
+        "label": "Актив пассив и другие отчеты (новая версия)",
+        "labels": [],
+        "links": []
+      },
+      {
+        "controls": [
+          {
+            "dataBind": "date: reportParameter.DateFrom ",
+            "disabled": false,
+            "id": null,
+            "name": "DateFrom",
+            "tag": "input",
+            "text": null,
+            "type": "text"
+          },
+          {
+            "dataBind": "date: reportParameter.DateTo",
+            "disabled": false,
+            "id": null,
+            "name": "DateTo",
+            "tag": "input",
+            "text": null,
+            "type": "text"
+          },
+          {
+            "dataBind": "safeClick:generateReportApply",
+            "disabled": false,
+            "id": null,
+            "name": null,
+            "tag": "button",
+            "text": "Выполнить",
+            "type": "submit"
+          },
+          {
+            "dataBind": null,
+            "disabled": false,
+            "id": null,
+            "name": null,
+            "tag": "button",
+            "text": "Отмена",
+            "type": "button"
+          }
+        ],
+        "heading": "Отчет по планированию денежных средств",
+        "label": "Отчет по планированию денежных средств",
+        "labels": [],
+        "links": []
+      },
+      {
+        "controls": [
+          {
+            "dataBind": "date: reportParameter.DateFrom ",
+            "disabled": false,
+            "id": null,
+            "name": "DateFrom",
+            "tag": "input",
+            "text": null,
+            "type": "text"
+          },
+          {
+            "dataBind": "date: reportParameter.DateTo",
+            "disabled": false,
+            "id": null,
+            "name": "DateTo",
+            "tag": "input",
+            "text": null,
+            "type": "text"
+          },
+          {
+            "dataBind": "safeClick:generateReportApply",
+            "disabled": false,
+            "id": null,
+            "name": null,
+            "tag": "button",
+            "text": "Выполнить",
+            "type": "submit"
+          },
+          {
+            "dataBind": null,
+            "disabled": false,
+            "id": null,
+            "name": null,
+            "tag": "button",
+            "text": "Отмена",
+            "type": "button"
+          }
+        ],
+        "heading": "АЗД 04. Данные о депозитной базе с разбивкой по суммам",
+        "label": "АЗД 04. Данные о депозитной базе с разбивкой по суммам",
+        "labels": [],
+        "links": []
+      }
+    ]
+  }
+}

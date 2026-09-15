@@ -1,0 +1,13 @@
+*.db
+*.db-shm
+*.db-wal
+__pycache__/
+*.pyc
+.venv/
+.test-hub/
+artifacts/*
+!artifacts/.gitkeep
+results/
+ready-reports/
+*.part
+*.zip

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "inspected_at": "2026-09-15",
+  "privacy": {
+    "client_data_collected": false,
+    "account_data_collected": false,
+    "report_generated": false,
+    "saved_abs_data": false
+  },
+  "authentication": "verified",
+  "standard_reports": {
+    "snapshot_file": "specs/tolubay-report-forms.json",
+    "snapshot_captured_at": "2026-08-20T14:34:57.598Z",
+    "routes_checked": 12,
+    "current_get_result": "page_not_found",
+    "current_execute_contract_verified": false,
+    "use_for_generation": false
+  },
+  "additional_reports": {
+    "current_catalogue_result": "http_500",
+    "use_for_generation": false
+  },
+  "accounts": {
+    "collection_scope": "one known customer ID at a time",
+    "global_account_export_available": false,
+    "read_endpoint": "/OnlineBank.Management.MVC/Deposits/Customer/GetDepositsByCustomerId",
+    "request": {
+      "customerId": "integer",
+      "showAll": false
+    },
+    "response_collection": "data.Deposits",
+    "minimum_record_fields": [
+      "MainAccountNo or AccountNo",
+      "CurrencyID",
+      "DepositAccountStatusID",
+      "CloseDate"
+    ],
+    "optional_display_fields": [
+      "CurrencySymbol",
+      "AccountName",
+      "OpenDate"
+    ]
+  }
+}

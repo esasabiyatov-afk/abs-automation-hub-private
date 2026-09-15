@@ -1,62 +1,41 @@
-# ABS Automation Hub — передача проекта другому ИИ
+# Automation Hub
 
-## Текущий статус
+Универсальное локальное ядро для приложений автоматизации и генерации отчётов. Приложения могут быть написаны на любом языке: они подключаются к одному HTTP API, а специфическая логика добавляется небольшими Python-плагинами.
 
-Версия: `0.3.0`.
+## Что уже есть
 
-Проект является локальным HTTP-ядром для автоматизации разрешённых операций в АБС Tolubay. Он не зависит от Selenium, Chrome или WebDriver и использует только стандартную библиотеку Python.
+- единая SQLite-база с источниками, заданиями, запусками, версиями записей, файлами отчётов и журналом аудита;
+- REST API на `127.0.0.1` с Bearer-токеном;
+- защита от повторной загрузки одинаковых записей по SHA-256;
+- подключаемые плагины без изменения ядра;
+- пример импорта JSON и формирования CSV;
+- транзакции, внешние ключи и WAL-режим SQLite.
+- fail-closed политика интеграции: разрешены только чтение и явно подтверждённые маршруты скачивания;
+- начальная обезличенная спецификация интерфейса Tolubay в `specs/tolubay-observed.json`.
+- HTTP-адаптер Tolubay без Selenium и Chrome: авторизация, одиночный и пакетный поиск клиентов, чтение полной анкеты, активных и закрытых счетов, формирование и скачивание отчётов.
+- обезличенный каталог 16 логических сценариев отчётов: 11 стандартных форм, отчёт по шаблону, 3 динамических дополнительных отчёта и кредитный отчёт по просрочке — в `specs/tolubay-report-forms.json`.
 
-Реализованы следующие read-only адаптеры:
+Сервис намеренно не хранит пароли от банковских систем. Секреты должны приходить из переменных окружения или отдельного защищённого хранилища.
 
-1. Получение страницы авторизации и CSRF-токена.
-2. Авторизация с cookie-сессией.
-3. Передача XLSX-шаблона в `ExcelTemplatesReportJob`.
-4. Проверка сервиса и запуск фонового задания.
-5. Опрос `/Job/Load` и поиск задания по `ContextKey`.
-6. Получение `JobResults` и `resultId`.
-7. Скачивание `/Job/Download?id=...` в `.xlsx` без браузера.
-8. Одиночный и пакетный поиск через `/Customers/SearchResult`.
-9. Чтение полной анкеты только через GET с `isShow=True`.
-10. Получение активных и закрытых счетов.
-11. Общий исполнитель подтверждённых форм отчётов и выписок.
-12. Каталог и генерация дополнительных отчётов через общую очередь заданий.
+## Отчет Tolubay по шаблону без браузера
 
-Сквозной запуск шаблонного отчёта на реальном сайте завершился успешно. Контракты поиска, анкеты и счетов подтверждены в интерфейсе. Локальные тесты: `11/11`.
-
-## Главные файлы
-
-- `src/automation_hub/tolubay.py` — HTTP-клиент Tolubay и отчёт по шаблону.
-- `src/automation_hub/tolubay_cli.py` — консольный запуск.
-- `src/automation_hub/readonly.py` — fail-closed политика безопасности.
-- `specs/tolubay-observed.json` — зафиксированные маршруты и контракты сайта.
-- `specs/tolubay-report-forms.json` — обезличенные контракты 16 сценариев: 11 стандартных форм раздела «Отчёты», отчёта по шаблону, 3 динамических дополнительных отчётов и выбранной кредитной формы.
-- `tests/test_tolubay.py` — полный тест HTTP-сценария на локальном имитаторе.
-- `README.md` — запуск и интеграция.
-
-## Правила безопасности
-
-- По умолчанию разрешены чтение, поиск, генерация отчётов и скачивание.
-- Удаление, восстановление и закрытие сущностей запрещены всегда.
-- Изменение или сохранение данных возможно только после отдельного одноразового разрешения пользователя на точный маршрут и поля.
-- Не хранить логин и пароль в исходниках, конфигурационных файлах или SQLite.
-- Получать секреты через интерактивный ввод, переменные окружения либо Windows Credential Manager/DPAPI.
-- Не отключать TLS-проверку в рабочей установке. Установить внутренний сертификат банка или передать `TOLUBAY_CA_FILE`.
-- Не журналировать cookies, CSRF-токены, пароли, содержимое шаблонов и банковские данные.
-
-## Что остаётся для прикладных приложений
-
-Приложение выбирает нужные поля формы из `specs/tolubay-report-forms.json` и вызывает `execute_report`. Для часто используемых отчётов можно добавить тонкие именованные обёртки с бизнес-валидацией параметров. Реальные клиентские значения нельзя включать в тесты, журнал или конфигурацию.
-
-Маршруты и часть полей уже перечислены в `specs/tolubay-observed.json`. Перед реализацией нового адаптера необходимо подтвердить его контракт и добавить тест с локальным HTTP-имитатором. Не использовать реальные клиентские данные в тестах.
-
-## Проверка
+Адаптер использует только стандартную библиотеку Python. Chrome, WebDriver и загрузка пакетов из интернета не нужны.
 
 ```powershell
+cd outputs/automation-hub
 $env:PYTHONPATH = "$PWD/src"
-python -m unittest discover -s tests -v
+$env:TOLUBAY_LOGIN = "ваш-логин"
+$env:TOLUBAY_PASSWORD = "ваш-пароль"
+
+python -m automation_hub.tolubay_cli `
+  --template "C:\Reports\template.xlsx" `
+  --date "21.08.2026" `
+  --output "C:\Reports\Ready"
 ```
 
-## Пример интеграции
+Для рабочего развёртывания установите внутренний сертификат банка в хранилище доверенных сертификатов Windows либо передайте путь через `TOLUBAY_CA_FILE`. Параметр `--insecure` предназначен только для временной диагностики.
+
+Использование из Python:
 
 ```python
 from automation_hub.tolubay import TolubayClient, TolubayConfig
@@ -64,16 +43,153 @@ from automation_hub.tolubay import TolubayClient, TolubayConfig
 client = TolubayClient(TolubayConfig())
 client.login(login, password)
 result = client.generate_template_report(
-    template_path="template.xlsx",
-    report_date="21.08.2026",
-    output_dir="ready-reports",
+    "template.xlsx",
+    "21.08.2026",
+    "ready-reports",
 )
 print(result.path)
 ```
 
-## Ограничения совместимости
+Поиск, анкета и счета:
 
-- Требуется Python 3.11 или новее либо будущая сборка в переносимый EXE.
-- На офисных компьютерах не требуется установленный Chrome.
-- Интернет не требуется, кроме доступа к внутреннему адресу АБС.
-- Серверные имена типов содержат версию АБС `1.3.1.341`; после обновления АБС клиент получает актуальные типы динамически со страницы задания.
+```python
+customers = client.search_customers({"SearchIdentificationNo": "значение"})
+batch = client.search_customers_batch([
+    {"SearchCustomerID": "123"},
+    {"SearchAccountNo": "счёт"},
+])
+questionnaire = client.get_customer_questionnaire(customers[0].customer_id)
+active_accounts = client.get_accounts(customers[0].customer_id)
+all_accounts = client.get_accounts(customers[0].customer_id, include_closed=True)
+```
+
+Обычная форма отчёта использует точный маршрут и поля из
+`specs/tolubay-report-forms.json`:
+
+```python
+download = client.execute_report(
+    "/OnlineBank.Management.MVC/BalanceGroupsStatementReport/Execute",
+    {
+        "Period.StartDate": "01.08.2026",
+        "Period.EndDate": "20.08.2026",
+        "Value": "XLSX",
+    },
+    "ready-reports",
+)
+```
+
+Дополнительные отчёты:
+
+```python
+catalogue = client.list_additional_reports()
+download = client.generate_additional_report(
+    report_name=catalogue[0].report_name,
+    report_type=catalogue[0].report_type,
+    start_date="01.08.2026",
+    end_date="20.08.2026",
+    output_dir="ready-reports",
+)
+```
+
+## Быстрый запуск
+
+Требуется Python 3.11+.
+
+```powershell
+cd outputs/automation-hub
+$env:PYTHONPATH = "$PWD/src"
+$env:HUB_API_TOKEN = "замените-на-длинный-случайный-токен"
+python -m automation_hub --root .hub --plugins plugins
+```
+
+Проверка:
+
+```powershell
+$headers = @{ Authorization = "Bearer $env:HUB_API_TOKEN" }
+Invoke-RestMethod http://127.0.0.1:8765/health -Headers $headers
+Invoke-RestMethod http://127.0.0.1:8765/plugins -Headers $headers
+```
+
+## Подключение первого приложения
+
+1. Приложение отправляет данные через собственный плагин либо создаёт задание через API.
+2. Ядро сохраняет нормализованные записи и историю запусков.
+3. Плагин отчёта читает записи и создаёт XLSX, CSV, PDF или другой файл.
+4. Приложение получает статус запуска через `/runs/{id}`.
+
+Создание источника:
+
+```powershell
+$source = Invoke-RestMethod http://127.0.0.1:8765/sources `
+  -Method Post -Headers $headers -ContentType application/json `
+  -Body '{"name":"clients","kind":"json","config":{"path":"C:\\data\\clients.json"}}'
+```
+
+Создание и запуск задания:
+
+```powershell
+$body = @{
+  name = "clients-import"
+  plugin = "example.json_import"
+  source_id = $source.id
+  params = @{ id_field = "id" }
+} | ConvertTo-Json -Depth 4
+
+$task = Invoke-RestMethod http://127.0.0.1:8765/tasks `
+  -Method Post -Headers $headers -ContentType application/json -Body $body
+
+Invoke-RestMethod "http://127.0.0.1:8765/tasks/$($task.id)/run" `
+  -Method Post -Headers $headers
+```
+
+## Контракт плагина
+
+Каждый файл в `plugins/` экспортирует объект `plugin`:
+
+```python
+from automation_hub.plugins import PluginResult
+
+class MyPlugin:
+    name = "company.my_task"
+    description = "Что делает плагин"
+
+    def run(self, context, params):
+        return PluginResult(
+            records=[{"external_id": "123", "payload": {"value": 10}}],
+            metrics={"processed": 1},
+        )
+
+plugin = MyPlugin()
+```
+
+Если плагин возвращает записи, у задания должен быть `source_id`. Для каждого элемента обязательны `external_id` и `payload`.
+
+## API
+
+| Метод | Маршрут | Назначение |
+|---|---|---|
+| GET | `/health` | Проверка сервиса |
+| GET | `/plugins` | Список плагинов |
+| GET/POST | `/sources` | Источники данных |
+| GET/POST | `/tasks` | Задания |
+| POST | `/tasks/{id}/run` | Синхронный запуск задания |
+| GET | `/runs?limit=100` | История запусков |
+| GET | `/runs/{id}` | Запуск и его артефакты |
+| GET | `/records?source_id=1` | Версии записей источника |
+
+## Следующие расширения
+
+- PostgreSQL для многопользовательской установки;
+- очередь фоновых заданий и расписание;
+- роли и отдельные токены приложений;
+- шифрование чувствительных полей;
+- плагины XLSX/PDF и адаптер к конкретному банковскому интерфейсу;
+- административная веб-панель.
+
+Начинать интеграцию следует с одного отчёта и обезличенного набора данных. После стабилизации контракта остальные приложения подключаются как новые плагины.
+
+## Статус адаптера Tolubay
+
+Карта создана без сохранения клиентских данных. В клиенте реализованы 14 параметров поиска, пакетный поиск, чтение полной анкеты в режиме `isShow=True`, получение активных и закрытых счетов, три вида выписок через общий исполнитель, 11 стандартных форм раздела «Отчёты», кредитный отчёт по просрочке, дополнительные отчёты и отчёт по XLSX-шаблону. Сценарий шаблонного отчёта ранее проверен на реальном сайте полностью; остальные контракты подтверждены в интерфейсе и покрыты локальным HTTP-имитатором.
+
+`ReadOnlyPolicy` блокирует другой домен, любые Delete/Close/Restore и все неизвестные POST-маршруты. Анкета читается только по точному GET-маршруту с обязательным `isShow=True`; её POST-форма никогда не отправляется. Разрешены только подтверждённые POST-запросы поиска данных, генерации отчётов и загрузки закрытых счетов.
