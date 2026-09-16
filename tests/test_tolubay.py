@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import gzip
 import tempfile
 import threading
 import unittest
@@ -16,6 +17,7 @@ ROOT = "/OnlineBank.Management.MVC"
 
 class _FakeTolubayHandler(BaseHTTPRequestHandler):
     requests: list[tuple[str, str, bytes]] = []
+    request_headers: list[tuple[str, str, str]] = []
 
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -24,9 +26,16 @@ class _FakeTolubayHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         return self.rfile.read(length)
 
-    def _send(self, body: bytes, content_type: str = "text/html; charset=utf-8") -> None:
+    def _send(
+        self,
+        body: bytes,
+        content_type: str = "text/html; charset=utf-8",
+        content_encoding: str | None = None,
+    ) -> None:
         self.send_response(200)
         self.send_header("Content-Type", content_type)
+        if content_encoding:
+            self.send_header("Content-Encoding", content_encoding)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -36,6 +45,7 @@ class _FakeTolubayHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         self.requests.append(("GET", self.path, b""))
+        self.request_headers.append(("GET", self.path, self.headers.get("User-Agent", "")))
         parsed = urlparse(self.path)
         if self.path == f"{ROOT}/Account/SignIn":
             self._send(
@@ -71,10 +81,15 @@ class _FakeTolubayHandler(BaseHTTPRequestHandler):
                 b'<select name="GeneralInfoModel.NationalityId">'
                 b'<option value="1" selected>Country</option></select></form>'
             )
-        elif parsed.path == f"{ROOT}/MemorialOrderReport":
+        elif parsed.path == f"{ROOT}/Common/CommonParams/GetBranchUsersParamSelectOptions":
+            if parse_qs(parsed.query).get("branchID") != ["1022"]:
+                self.send_error(400)
+                return
             self._send(
-                b'<select name="User.Value"><option value="17">First user</option>'
-                b'<option value="18">Second user</option></select>'
+                gzip.compress(
+                    b'<option value="17">First user<option value="18">Second user'
+                ),
+                content_encoding="gzip",
             )
         elif parsed.path == f"{ROOT}/Management/AdditionalReport":
             model = {
@@ -278,6 +293,7 @@ class _FakeTolubayHandler(BaseHTTPRequestHandler):
 class TolubayClientTests(unittest.TestCase):
     def setUp(self) -> None:
         _FakeTolubayHandler.requests = []
+        _FakeTolubayHandler.request_headers = []
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), _FakeTolubayHandler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -406,11 +422,19 @@ class TolubayClientTests(unittest.TestCase):
 
     def test_memorial_order_user_directory_is_read_only(self) -> None:
         client = self._logged_in_client()
-        users = client.list_memorial_order_users()
+        users = client.list_memorial_order_users("1022")
         self.assertEqual([(user.user_id, user.name) for user in users], [("17", "First user"), ("18", "Second user")])
         self.assertIn(
-            ("GET", f"{ROOT}/MemorialOrderReport"),
+            ("GET", f"{ROOT}/Common/CommonParams/GetBranchUsersParamSelectOptions?branchID=1022"),
             [(method, path) for method, path, _ in _FakeTolubayHandler.requests],
+        )
+        self.assertIn(
+            (
+                "GET",
+                f"{ROOT}/Common/CommonParams/GetBranchUsersParamSelectOptions?branchID=1022",
+                "Tolubay-ABS-Reports-Reader/1.0",
+            ),
+            _FakeTolubayHandler.request_headers,
         )
 
     def test_additional_report_catalogue_and_job_download(self) -> None:

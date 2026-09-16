@@ -127,6 +127,7 @@ class ReportService:
         self.tasks: list[ReportTask] = []
         self.additional: list[AdditionalReportItem] = []
         self.memorial_users: list[MemorialOrderUser] = []
+        self.memorial_branch_id: str | None = None
         self.lock = threading.RLock()
 
     def connect(self, login: str, password: str) -> None:
@@ -137,6 +138,7 @@ class ReportService:
         with self.lock:
             self.client = client
             self.memorial_users = []
+            self.memorial_branch_id = None
 
     def require_client(self) -> TolubayClient:
         with self.lock:
@@ -148,10 +150,12 @@ class ReportService:
         with self.lock:
             return [{"index": index, **asdict(task)} for index, task in enumerate(self.tasks)]
 
-    def load_memorial_users(self) -> list[dict[str, str]]:
-        users = self.require_client().list_memorial_order_users()
+    def load_memorial_users(self, branch_id: str) -> list[dict[str, str]]:
+        normalized_branch_id = str(branch_id).strip()
+        users = self.require_client().list_memorial_order_users(normalized_branch_id)
         with self.lock:
             self.memorial_users = users
+            self.memorial_branch_id = normalized_branch_id
         return [{"id": user.user_id, "name": user.name} for user in users]
 
     def add(self, kind: str, values: dict[str, Any]) -> None:
@@ -176,6 +180,9 @@ class ReportService:
                 raise ValueError("Выберите хотя бы одного сотрудника")
             with self.lock:
                 directory = {user.user_id: user.name for user in self.memorial_users}
+                loaded_branch_id = self.memorial_branch_id
+            if loaded_branch_id != branch_id:
+                raise ValueError("После смены филиала загрузите список сотрудников заново")
             selected_ids = [str(user_id).strip() for user_id in selected]
             if len(selected_ids) != len(set(selected_ids)) or any(user_id not in directory for user_id in selected_ids):
                 raise ValueError("Список сотрудников устарел. Загрузите его из ABS повторно")
@@ -325,12 +332,12 @@ function setDefaults(){document.getElementById('fields').value=JSON.stringify(fo
 function setOptions(id,options){let s=document.getElementById(id);s.innerHTML='';options.forEach(o=>s.add(new Option(o.label,o.value)))}
 function render(q){let e=document.getElementById('queue');e.innerHTML='';q.forEach(t=>{let li=document.createElement('li');li.textContent=t.title+' ';for(const [s,d] of [['↑',-1],['↓',1],['Убрать',0]]){let b=document.createElement('button');b.textContent=s;b.onclick=async()=>{try{await api(d?'/api/move':'/api/remove',{index:t.index,direction:d});refresh()}catch(e){msg(e.message,'error')}};li.append(b)}e.append(li)})}
 async function refresh(){let x=await api('/api/queue');render(x.queue)}
-async function connect(){try{msg('Подключение…');await api('/api/connect',{login:v('login'),password:document.getElementById('password').value});document.getElementById('password').value='';await loadMemorialUsers()}catch(e){msg(e.message,'error')}}
+async function connect(){try{msg('Подключение…');await api('/api/connect',{login:v('login'),password:document.getElementById('password').value});document.getElementById('password').value='';msg('Подключено. Выберите филиал и загрузите сотрудников.')}catch(e){msg(e.message,'error')}}
 async function add(kind,values){try{await api('/api/add',{kind,values});refresh()}catch(e){msg(e.message,'error')}}
 function addStatement(){add('statement',{customer_id:v('customer_id'),account_no:v('account_no'),currency_id:v('currency_id'),currency_name:v('currency_name'),start_date:v('statement_start'),end_date:v('statement_end'),output_format:v('statement_format')})}
 function addStandard(){try{add('standard',{report_name:v('standard'),fields:JSON.parse(document.getElementById('fields').value)})}catch(e){msg('Некорректный JSON','error')}}
 function renderMemorialUsers(){let box=document.getElementById('memorial_users'),selected=new Set([...box.querySelectorAll('input:checked')].map(x=>x.value)),q=v('memorial_filter').toLocaleLowerCase('ru-RU');box.innerHTML='';memorialUsers.filter(u=>u.name.toLocaleLowerCase('ru-RU').includes(q)).forEach(u=>{let label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=u.id;input.checked=selected.has(u.id);label.append(input,document.createTextNode(' '+u.name));box.append(label)})}
-async function loadMemorialUsers(){try{msg('Загрузка сотрудников…');let x=await api('/api/memorial-users');memorialUsers=x.users;renderMemorialUsers();msg('Сотрудники загружены')}catch(e){msg(e.message,'error')}}
+async function loadMemorialUsers(){try{msg('Загрузка сотрудников…');let x=await api('/api/memorial-users',{branch_id:v('memorial_branch')});memorialUsers=x.users;renderMemorialUsers();msg('Сотрудники загружены')}catch(e){msg(e.message,'error')}}
 function addMemorialOrder(){let users=[...document.querySelectorAll('#memorial_users input:checked')].map(x=>x.value);add('memorial_order',{branch_id:v('memorial_branch'),office_id:v('memorial_office'),report_date:v('memorial_date'),users,print_after_download:document.getElementById('memorial_print').checked})}
 function addTemplate(){add('template',{path:v('template_path'),date:v('template_date'),cache:document.getElementById('template_cache').checked,formula:document.getElementById('template_formula').checked})}
 async function loadAdditional(){try{let x=await api('/api/additional');additional=x.items;let s=document.getElementById('additional');s.innerHTML='';additional.forEach((a,i)=>s.add(new Option((a.group? a.group+': ':'')+a.name,i)));msg('Каталог загружен')}catch(e){msg(e.message,'error')}}
@@ -387,7 +394,7 @@ def make_handler(service: ReportService) -> type[BaseHTTPRequestHandler]:
                     service.connect(str(data.get("login", "")), str(data.get("password", "")))
                     payload = {"ok": True}
                 elif path == "/api/memorial-users":
-                    payload = {"users": service.load_memorial_users()}
+                    payload = {"users": service.load_memorial_users(str(data.get("branch_id", "")))}
                 elif path == "/api/queue":
                     payload = {"queue": service.queue()}
                 elif path == "/api/add":

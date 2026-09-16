@@ -70,6 +70,7 @@ class ReportAppTests(unittest.TestCase):
             MemorialOrderUser("17", "Первый сотрудник"),
             MemorialOrderUser("18", "Второй сотрудник"),
         ]
+        service.memorial_branch_id = "1022"
         service.add(
             "memorial_order",
             {
@@ -99,6 +100,7 @@ class ReportAppTests(unittest.TestCase):
         service = ReportService(insecure=False)
         service.client = FakeClient()  # type: ignore[assignment]
         service.memorial_users = [MemorialOrderUser("17", "Первый сотрудник")]
+        service.memorial_branch_id = "1022"
         service.add(
             "memorial_order",
             {"branch_id": "1022", "office_id": "1057", "report_date": "15.09.2026", "users": ["17"]},

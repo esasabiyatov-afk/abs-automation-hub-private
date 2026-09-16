@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import base64
+import gzip
 import json
 import re
 import ssl
 import time
+import zlib
 from dataclasses import dataclass
 from datetime import date, datetime
 from email.message import Message
@@ -38,6 +40,14 @@ ADDITIONAL_REPORT_JOB = f"{ROOT}/Management/AdditionalReportJob"
 ADDITIONAL_CHECK_SERVICE = f"{ADDITIONAL_REPORT_JOB}/CheckService"
 ADDITIONAL_RUN_JOB = f"{ADDITIONAL_REPORT_JOB}/Run"
 MEMORIAL_ORDER_REPORT = f"{ROOT}/MemorialOrderReport"
+BRANCH_USERS_SELECT_OPTIONS = f"{ROOT}/Common/CommonParams/GetBranchUsersParamSelectOptions"
+MEMORIAL_ORDER_PAGE_HEADERS = {
+    # ABS returns the populated report form to its ordinary browser navigation.
+    # Supplying these non-sensitive representation headers keeps the HTTP adapter
+    # on that same response path; no data is sent and the form is never submitted.
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "User-Agent": "Tolubay-ABS-Reports-Reader/1.0",
+}
 
 CUSTOMER_SEARCH_FIELDS = frozenset(
     {
@@ -260,20 +270,39 @@ class _FormValuesParser(HTMLParser):
 class _NamedSelectOptionsParser(HTMLParser):
     """Read options from one ABS select element without submitting a form."""
 
-    def __init__(self, select_name: str) -> None:
+    def __init__(self, select_name: str, *, accept_options_without_select: bool = False) -> None:
         super().__init__()
         self.select_name = select_name
+        self.accept_options_without_select = accept_options_without_select
         self.options: list[tuple[str, str]] = []
         self._in_target_select = False
         self._option_value: str | None = None
         self._option_text: list[str] = []
+
+    def _finish_option(self) -> None:
+        if self._option_value is None:
+            return
+        label = " ".join("".join(self._option_text).split())
+        if self._option_value and label:
+            self.options.append((self._option_value, label))
+        self._option_value = None
+        self._option_text = []
+
+    def finish(self) -> None:
+        """Finish a trailing option in a partial HTML response."""
+        self._finish_option()
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
         tag = tag.lower()
         if tag == "select":
             self._in_target_select = values.get("name") == self.select_name
-        elif tag == "option" and self._in_target_select:
+        elif tag == "option" and (
+            self._in_target_select or self.accept_options_without_select
+        ):
+            # HTML allows an option end tag to be omitted.  Finish the preceding
+            # item before beginning the next one so both MVC renderings work.
+            self._finish_option()
             self._option_value = values.get("value") or ""
             self._option_text = []
 
@@ -283,13 +312,10 @@ class _NamedSelectOptionsParser(HTMLParser):
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
-        if tag == "option" and self._option_value is not None:
-            label = " ".join("".join(self._option_text).split())
-            if self._option_value and label:
-                self.options.append((self._option_value, label))
-            self._option_value = None
-            self._option_text = []
+        if tag == "option":
+            self._finish_option()
         elif tag == "select":
+            self._finish_option()
             self._in_target_select = False
 
 
@@ -449,9 +475,16 @@ class TolubayClient:
                 body = response.read()
                 final_url = response.geturl()
                 response_headers = response.headers
+                content_encoding = response_headers.get("Content-Encoding", "").casefold()
+                if content_encoding == "gzip":
+                    body = gzip.decompress(body)
+                elif content_encoding == "deflate":
+                    body = zlib.decompress(body)
         except HTTPError as exc:
             payload = exc.read(1024).decode("utf-8", errors="replace")
             raise ProtocolError(f"HTTP {exc.code} for {url}: {payload[:300]}") from exc
+        except (OSError, zlib.error) as exc:
+            raise ProtocolError(f"Cannot decode response from {url}") from exc
         except URLError as exc:
             raise ProtocolError(f"Cannot reach {url}: {exc.reason}") from exc
 
@@ -461,8 +494,8 @@ class TolubayClient:
             raise AuthenticationError("Tolubay session expired or authentication is required")
         return body, response_headers, final_url
 
-    def _get_text(self, path: str) -> str:
-        body, _, _ = self._request("GET", path)
+    def _get_text(self, path: str, *, headers: dict[str, str] | None = None) -> str:
+        body, _, _ = self._request("GET", path, headers=headers)
         return body.decode("utf-8", errors="replace")
 
     def _post_form(
@@ -746,11 +779,21 @@ class TolubayClient:
             )
         return result
 
-    def list_memorial_order_users(self) -> list[MemorialOrderUser]:
-        """Read the current ABS employee directory used by the memorial-order form."""
+    def list_memorial_order_users(self, branch_id: str) -> list[MemorialOrderUser]:
+        """Read the current branch's employee directory used by the report form."""
         self._require_authenticated()
-        parser = _NamedSelectOptionsParser("User.Value")
-        parser.feed(self._get_text(MEMORIAL_ORDER_REPORT))
+        normalized_branch_id = str(branch_id).strip()
+        if not normalized_branch_id.isdigit():
+            raise ValueError("branch_id must be a numeric ABS identifier")
+        parser = _NamedSelectOptionsParser(
+            "User.Value", accept_options_without_select=True
+        )
+        response_html = self._get_text(
+            f"{BRANCH_USERS_SELECT_OPTIONS}?{urlencode({'branchID': normalized_branch_id})}",
+            headers=MEMORIAL_ORDER_PAGE_HEADERS,
+        )
+        parser.feed(response_html)
+        parser.finish()
         users: list[MemorialOrderUser] = []
         seen: set[str] = set()
         for user_id, name in parser.options:
@@ -759,7 +802,7 @@ class TolubayClient:
             seen.add(user_id)
             users.append(MemorialOrderUser(user_id=user_id, name=name))
         if not users:
-            raise ProtocolError("ABS не вернула список сотрудников для мемориального ордера")
+            raise ProtocolError("ABS не вернула список сотрудников для выбранного филиала")
         return users
 
     def _create_additional_report_job(
