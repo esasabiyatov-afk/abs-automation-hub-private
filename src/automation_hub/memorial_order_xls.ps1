@@ -15,6 +15,7 @@ $controllerLabel = -join [char[]](0x041A, 0x043E, 0x043D, 0x0442, 0x0440, 0x043E
 $executorLabel = -join [char[]](0x0418, 0x0441, 0x043F, 0x043E, 0x043B, 0x043D, 0x0438, 0x0442, 0x0435, 0x043B, 0x044C)
 # One normal-height blank row before each signature, matching the paper form.
 $signatureGapHeight = 15.0
+$executorSignatureRowHeight = 27.75
 $excel = $null
 $workbook = $null
 try {
@@ -66,16 +67,17 @@ try {
             ).ClearContents() | Out-Null
         }
         $sheet.UsedRange.Rows.AutoFit() | Out-Null
-        # Preserve handwriting space: stretch the nearest blank row before
-        # "Исполнитель:" and the first blank row before "Контролер:".
-        $signatureGapRows = @()
-        for ($rowNumber = $executor.Row - 1; $rowNumber -ge $used.Row; $rowNumber--) {
-            $rowValues = $sheet.Range($sheet.Cells.Item($rowNumber, $used.Column), $sheet.Cells.Item($rowNumber, $lastUsedColumn)).Value2
-            if (-not (@($rowValues) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })) {
-                $signatureGapRows += $rowNumber
-                break
-            }
+        # In the ABS template "Итого" can be immediately above "Исполнитель:".
+        # Preserve a normal blank line there by extending the signature row and
+        # placing its text at the bottom.  Do not stretch a blank row above
+        # "Итого", which would create space in the wrong place.
+        if ([double]$sheet.Rows.Item($executor.Row).RowHeight -lt $executorSignatureRowHeight) {
+            $sheet.Rows.Item($executor.Row).RowHeight = $executorSignatureRowHeight
         }
+        $executor.VerticalAlignment = -4107 # xlVAlignBottom
+
+        # Keep one normal-height blank line between the two signatures.
+        $signatureGapRows = @()
         for ($rowNumber = $executor.Row + 1; $rowNumber -lt $controller.Row; $rowNumber++) {
             $rowValues = $sheet.Range($sheet.Cells.Item($rowNumber, $used.Column), $sheet.Cells.Item($rowNumber, $lastUsedColumn)).Value2
             if (-not (@($rowValues) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })) {
