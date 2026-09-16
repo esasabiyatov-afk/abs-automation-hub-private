@@ -13,7 +13,8 @@ if ($extension -notin '.xls', '.xlsx') {
 }
 $controllerLabel = -join [char[]](0x041A, 0x043E, 0x043D, 0x0442, 0x0440, 0x043E, 0x043B, 0x0435, 0x0440)
 $executorLabel = -join [char[]](0x0418, 0x0441, 0x043F, 0x043E, 0x043B, 0x043D, 0x0438, 0x0442, 0x0435, 0x043B, 0x044C)
-$signatureGapHeight = 24.0
+# One normal-height blank row before each signature, matching the paper form.
+$signatureGapHeight = 15.0
 $excel = $null
 $workbook = $null
 try {
