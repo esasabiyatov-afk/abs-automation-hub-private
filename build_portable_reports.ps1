@@ -14,3 +14,5 @@ $python = Get-Command python -ErrorAction Stop
     --add-data "$root\specs;specs" `
     --add-data "$root\src\automation_hub\memorial_order_xls.ps1;automation_hub" `
     (Join-Path $root 'tolubay_reports_app.py')
+
+Copy-Item -LiteralPath (Join-Path $root 'START_PORTABLE_REPORTS.bat') -Destination (Join-Path $root 'release\START_PORTABLE_REPORTS.bat') -Force
