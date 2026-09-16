@@ -11,3 +11,5 @@ results/
 ready-reports/
 *.part
 *.zip
+build/
+release/

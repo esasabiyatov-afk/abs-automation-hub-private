@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import threading
 import webbrowser
 from dataclasses import asdict, dataclass
@@ -12,10 +13,10 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+SCRIPT_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 SOURCE_DIR = SCRIPT_DIR / "src"
-if SOURCE_DIR.is_dir() and str(SOURCE_DIR) not in __import__("sys").path:
-    __import__("sys").path.insert(0, str(SOURCE_DIR))
+if SOURCE_DIR.is_dir() and str(SOURCE_DIR) not in sys.path:
+    sys.path.insert(0, str(SOURCE_DIR))
 
 from automation_hub.tolubay import AdditionalReportItem, TolubayClient, TolubayConfig  # noqa: E402
 from automation_hub.memorial_order_xls import process_memorial_order_xls  # noqa: E402
