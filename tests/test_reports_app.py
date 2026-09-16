@@ -10,12 +10,21 @@ from tolubay_reports_app import (
     MEMORIAL_ORDER_REPORT,
     ReportService,
     form_defaults,
+    memorial_order_dates,
     memorial_order_fields,
     report_select_options,
 )
 
 
 class ReportAppTests(unittest.TestCase):
+    def test_memorial_order_dates_returns_inclusive_range(self) -> None:
+        self.assertEqual(
+            memorial_order_dates("15.09.2026", "17.09.2026"),
+            ["15.09.2026", "16.09.2026", "17.09.2026"],
+        )
+        with self.assertRaisesRegex(ValueError, "раньше"):
+            memorial_order_dates("17.09.2026", "15.09.2026")
+
     def test_form_defaults_uses_checked_choices_and_dates(self) -> None:
         values = form_defaults(
             [
@@ -65,32 +74,42 @@ class ReportAppTests(unittest.TestCase):
         )
 
     def test_memorial_order_adds_one_task_per_selected_employee(self) -> None:
+        class FakeClient:
+            def operational_transaction_count(self, **kwargs: object) -> int:
+                return 1
+
         service = ReportService(insecure=False)
+        service.client = FakeClient()  # type: ignore[assignment]
         service.memorial_users = [
             MemorialOrderUser("17", "Первый сотрудник"),
             MemorialOrderUser("18", "Второй сотрудник"),
         ]
         service.memorial_branch_id = "1022"
-        service.add(
+        summary = service.add(
             "memorial_order",
             {
                 "branch_id": "1022",
                 "office_id": "1057",
-                "report_date": "15.09.2026",
+                "start_date": "15.09.2026",
+                "end_date": "16.09.2026",
                 "users": ["17", "18"],
                 "print_after_download": True,
             },
         )
         queue = service.queue()
-        self.assertEqual(len(queue), 2)
+        self.assertEqual(summary, {"added": 4, "skipped": 0})
+        self.assertEqual(len(queue), 4)
         self.assertTrue(all(task["kind"] == "memorial_order" for task in queue))
         self.assertTrue(all(task["values"]["fields"]["Value"] == "XLS" for task in queue))
-        self.assertEqual([task["values"]["fields"]["User.Value"] for task in queue], ["17", "18"])
+        self.assertEqual([task["values"]["fields"]["User.Value"] for task in queue], ["17", "18", "17", "18"])
         self.assertTrue(all(task["values"]["print_after_download"] for task in queue))
         self.assertEqual(MEMORIAL_ORDER_REPORT, "Сводный мемориальный ордер")
 
     def test_memorial_order_download_processes_without_printing(self) -> None:
         class FakeClient:
+            def operational_transaction_count(self, **kwargs: object) -> int:
+                return 1
+
             def execute_report(self, *args: object, **kwargs: object) -> ReportDownloadResult:
                 path = Path(args[2]) / "report.xls"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -101,11 +120,27 @@ class ReportAppTests(unittest.TestCase):
         service.client = FakeClient()  # type: ignore[assignment]
         service.memorial_users = [MemorialOrderUser("17", "Первый сотрудник")]
         service.memorial_branch_id = "1022"
-        service.add(
+        summary = service.add(
             "memorial_order",
-            {"branch_id": "1022", "office_id": "1057", "report_date": "15.09.2026", "users": ["17"]},
+            {"branch_id": "1022", "office_id": "1057", "start_date": "15.09.2026", "end_date": "15.09.2026", "users": ["17"]},
         )
         with TemporaryDirectory() as directory, patch("tolubay_reports_app.process_memorial_order_xls") as processor:
             paths = service.download(directory)
         self.assertEqual(len(paths), 1)
         processor.assert_called_once_with(Path(paths[0]), print_after_processing=False)
+
+    def test_memorial_order_skips_user_day_without_postings(self) -> None:
+        class FakeClient:
+            def operational_transaction_count(self, **kwargs: object) -> int:
+                return 0
+
+        service = ReportService(insecure=False)
+        service.client = FakeClient()  # type: ignore[assignment]
+        service.memorial_users = [MemorialOrderUser("17", "Первый сотрудник")]
+        service.memorial_branch_id = "1022"
+        summary = service.add(
+            "memorial_order",
+            {"branch_id": "1022", "office_id": "1057", "start_date": "15.09.2026", "end_date": "16.09.2026", "users": ["17"]},
+        )
+        self.assertEqual(summary, {"added": 0, "skipped": 2})
+        self.assertEqual(service.queue(), [])

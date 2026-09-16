@@ -41,6 +41,7 @@ ADDITIONAL_CHECK_SERVICE = f"{ADDITIONAL_REPORT_JOB}/CheckService"
 ADDITIONAL_RUN_JOB = f"{ADDITIONAL_REPORT_JOB}/Run"
 MEMORIAL_ORDER_REPORT = f"{ROOT}/MemorialOrderReport"
 BRANCH_USERS_SELECT_OPTIONS = f"{ROOT}/Common/CommonParams/GetBranchUsersParamSelectOptions"
+GENERAL_BOOK_TRANSACTIONS = f"{ROOT}/GeneralBook/Transactions"
 MEMORIAL_ORDER_PAGE_HEADERS = {
     # ABS returns the populated report form to its ordinary browser navigation.
     # Supplying these non-sensitive representation headers keeps the HTTP adapter
@@ -148,7 +149,7 @@ class _HtmlTablesParser(HTMLParser):
         values = dict(attrs)
         tag = tag.lower()
         if tag == "table" and self._table is None:
-            self._table = {"headers": [], "rows": []}
+            self._table = {"id": values.get("id") or "", "headers": [], "rows": []}
         elif self._table is not None and tag in {"thead", "tbody"}:
             self._section = tag
         elif self._table is not None and tag == "tr":
@@ -804,6 +805,46 @@ class TolubayClient:
         if not users:
             raise ProtocolError("ABS не вернула список сотрудников для выбранного филиала")
         return users
+
+    def operational_transaction_count(
+        self,
+        *,
+        branch_id: str,
+        office_id: str,
+        user_id: str,
+        transaction_date: str,
+    ) -> int:
+        """Return the number of displayed operational-journal postings for one user/day."""
+        self._require_authenticated()
+        identifiers = {
+            "branch_id": str(branch_id).strip(),
+            "office_id": str(office_id).strip(),
+            "user_id": str(user_id).strip(),
+        }
+        if any(not value.isdigit() for value in identifiers.values()):
+            raise ValueError("branch_id, office_id and user_id must be numeric ABS identifiers")
+        normalized_date = str(transaction_date).strip()
+        if not normalized_date:
+            raise ValueError("transaction_date is required")
+        fields = {
+            "PagingInfo.Page": "1",
+            "Branch.All": "False",
+            "Branch.Value": identifiers["branch_id"],
+            "Office.All": "False",
+            "Office.Value": identifiers["office_id"],
+            "User.All": "False",
+            "User.Value": identifiers["user_id"],
+            "TransactionDate.Date": normalized_date,
+            "Currency.All": "True",
+            "ProgramModule.All": "True",
+            "AllAccounts": "True",
+        }
+        parser = _HtmlTablesParser()
+        parser.feed(self._get_text(f"{GENERAL_BOOK_TRANSACTIONS}?{urlencode(fields)}"))
+        table = next((item for item in parser.tables if item.get("id") == "table-transactions"), None)
+        if table is None:
+            raise ProtocolError("ABS не вернула таблицу операционного дневника")
+        return sum(1 for row, _ in table["rows"] if len(row) >= 15)
 
     def _create_additional_report_job(
         self,

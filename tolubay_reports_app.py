@@ -6,7 +6,7 @@ import sys
 import threading
 import webbrowser
 from dataclasses import asdict, dataclass
-from datetime import date
+from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -39,6 +39,20 @@ class ReportTask:
 
 def today_text() -> str:
     return date.today().strftime("%d.%m.%Y")
+
+
+def memorial_order_dates(start_date: str, end_date: str) -> list[str]:
+    """Return each inclusive report date, in chronological order."""
+    try:
+        start = datetime.strptime(start_date.strip(), "%d.%m.%Y").date()
+        end = datetime.strptime(end_date.strip(), "%d.%m.%Y").date()
+    except ValueError as exc:
+        raise ValueError("Укажите даты в формате ДД.ММ.ГГГГ") from exc
+    if end < start:
+        raise ValueError("Дата «по» не может быть раньше даты «с»")
+    if (end - start).days > 30:
+        raise ValueError("За один запуск можно подготовить не более 31 дня")
+    return [(start + timedelta(days=offset)).strftime("%d.%m.%Y") for offset in range((end - start).days + 1)]
 
 
 def form_defaults(fields: list[dict[str, Any]]) -> dict[str, str]:
@@ -158,7 +172,7 @@ class ReportService:
             self.memorial_branch_id = normalized_branch_id
         return [{"id": user.user_id, "name": user.name} for user in users]
 
-    def add(self, kind: str, values: dict[str, Any]) -> None:
+    def add(self, kind: str, values: dict[str, Any]) -> dict[str, int]:
         if kind == "statement":
             required = ("customer_id", "account_no", "currency_id", "start_date", "end_date")
             if not all(str(values.get(key, "")).strip() for key in required):
@@ -174,7 +188,9 @@ class ReportService:
                 raise ValueError("В спецификации не найден Сводный мемориальный ордер")
             branch_id = str(values.get("branch_id", "")).strip()
             office_id = str(values.get("office_id", "")).strip()
-            report_date = str(values.get("report_date", "")).strip()
+            dates = memorial_order_dates(
+                str(values.get("start_date", "")), str(values.get("end_date", ""))
+            )
             selected = values.get("users")
             if not isinstance(selected, list) or not selected:
                 raise ValueError("Выберите хотя бы одного сотрудника")
@@ -187,27 +203,39 @@ class ReportService:
             if len(selected_ids) != len(set(selected_ids)) or any(user_id not in directory for user_id in selected_ids):
                 raise ValueError("Список сотрудников устарел. Загрузите его из ABS повторно")
             report = self.forms[MEMORIAL_ORDER_REPORT]
-            tasks = [
-                ReportTask(
-                    "memorial_order",
-                    f"Мемориальный ордер: {directory[user_id]} ({report_date})",
-                    {
-                        "fields": memorial_order_fields(
-                            report,
-                            branch_id=branch_id,
-                            office_id=office_id,
-                            user_id=user_id,
-                            report_date=report_date,
-                        ),
-                        "user_name": directory[user_id],
-                        "print_after_download": bool(values.get("print_after_download")),
-                    },
-                )
-                for user_id in selected_ids
-            ]
+            client = self.require_client()
+            tasks: list[ReportTask] = []
+            skipped = 0
+            for report_date in dates:
+                for user_id in selected_ids:
+                    if client.operational_transaction_count(
+                        branch_id=branch_id,
+                        office_id=office_id,
+                        user_id=user_id,
+                        transaction_date=report_date,
+                    ) == 0:
+                        skipped += 1
+                        continue
+                    tasks.append(
+                        ReportTask(
+                            "memorial_order",
+                            f"Мемориальный ордер: {directory[user_id]} ({report_date})",
+                            {
+                                "fields": memorial_order_fields(
+                                    report,
+                                    branch_id=branch_id,
+                                    office_id=office_id,
+                                    user_id=user_id,
+                                    report_date=report_date,
+                                ),
+                                "user_name": directory[user_id],
+                                "print_after_download": bool(values.get("print_after_download")),
+                            },
+                        )
+                    )
             with self.lock:
                 self.tasks.extend(tasks)
-            return
+            return {"added": len(tasks), "skipped": skipped}
         elif kind == "template":
             if not Path(str(values.get("path", ""))).is_file() or not str(values.get("date", "")).strip():
                 raise ValueError("Выберите существующий XLSX-шаблон и укажите дату")
@@ -220,6 +248,7 @@ class ReportService:
             raise ValueError("Неизвестный вид задания")
         with self.lock:
             self.tasks.append(ReportTask(kind, title, values))
+        return {"added": 1, "skipped": 0}
 
     def move(self, index: int, direction: int) -> None:
         with self.lock:
@@ -314,7 +343,7 @@ input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{widt
 <button onclick="addStandard()">Добавить в очередь</button></section>
 <section><h2>Документ дня: сводный мемориальный ордер</h2><p class="note">Выберите сотрудников из актуального справочника ABS. Их внутренние коды не показываются и вручную не вводятся.</p><div class="grid">
 <label>Филиал<select id="memorial_branch"></select></label><label>Отделение<select id="memorial_office"></select></label>
-<label>Дата<input id="memorial_date"></label></div><button onclick="loadMemorialUsers()">Загрузить сотрудников ABS</button><label>Поиск сотрудника<input id="memorial_filter" oninput="renderMemorialUsers()"></label><div id="memorial_users" class="users"></div><label><input type="checkbox" id="memorial_print"> Печатать каждый обработанный файл на принтере Windows по умолчанию</label><button onclick="addMemorialOrder()">Добавить выбранных в очередь</button></section>
+<label>Дата с<input id="memorial_start_date"></label><label>Дата по<input id="memorial_end_date"></label></div><button onclick="loadMemorialUsers()">Загрузить сотрудников ABS</button><label>Поиск сотрудника<input id="memorial_filter" oninput="renderMemorialUsers()"></label><div id="memorial_users" class="users"></div><label><input type="checkbox" id="memorial_print"> Печатать каждый обработанный файл на принтере Windows по умолчанию</label><button onclick="addMemorialOrder()">Проверить проводки и добавить в очередь</button></section>
 <section class="hidden" aria-hidden="true"><h2>Отчёт по XLSX-шаблону</h2><div class="grid"><label>Путь к XLSX-шаблону<input id="template_path"></label><label>Дата отчёта<input id="template_date"></label></div>
 <label><input type="checkbox" id="template_cache"> Использовать кэш ABS</label><label><input type="checkbox" id="template_formula"> Формулы как комментарии</label><button onclick="addTemplate()">Добавить в очередь</button></section>
 <section class="hidden" aria-hidden="true"><h2>Дополнительный отчёт</h2><button onclick="loadAdditional()">Загрузить каталог ABS</button><label>Отчёт<select id="additional"></select></label>
@@ -324,7 +353,7 @@ input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{widt
 <script>
 let forms={}, additional=[], memorialUsers=[];
 const today=()=>new Date().toLocaleDateString('ru-RU');
-for(const id of ['statement_start','statement_end','template_date','additional_start','additional_end','memorial_date'])document.getElementById(id).value=today();
+for(const id of ['statement_start','statement_end','template_date','additional_start','additional_end','memorial_start_date','memorial_end_date'])document.getElementById(id).value=today();
 async function api(path,data={}){let r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});let x=await r.json();if(!r.ok)throw Error(x.error||'Ошибка');return x}
 function msg(t,c='ok'){let e=document.getElementById('status');e.className=c;e.textContent=t}
 function v(id){return document.getElementById(id).value.trim()}
@@ -333,12 +362,12 @@ function setOptions(id,options){let s=document.getElementById(id);s.innerHTML=''
 function render(q){let e=document.getElementById('queue');e.innerHTML='';q.forEach(t=>{let li=document.createElement('li');li.textContent=t.title+' ';for(const [s,d] of [['↑',-1],['↓',1],['Убрать',0]]){let b=document.createElement('button');b.textContent=s;b.onclick=async()=>{try{await api(d?'/api/move':'/api/remove',{index:t.index,direction:d});refresh()}catch(e){msg(e.message,'error')}};li.append(b)}e.append(li)})}
 async function refresh(){let x=await api('/api/queue');render(x.queue)}
 async function connect(){try{msg('Подключение…');await api('/api/connect',{login:v('login'),password:document.getElementById('password').value});document.getElementById('password').value='';msg('Подключено. Выберите филиал и загрузите сотрудников.')}catch(e){msg(e.message,'error')}}
-async function add(kind,values){try{await api('/api/add',{kind,values});refresh()}catch(e){msg(e.message,'error')}}
+async function add(kind,values){try{let x=await api('/api/add',{kind,values});refresh();if(x.summary)msg('В очередь: '+x.summary.added+'. Без проводок: '+x.summary.skipped+'.')}catch(e){msg(e.message,'error')}}
 function addStatement(){add('statement',{customer_id:v('customer_id'),account_no:v('account_no'),currency_id:v('currency_id'),currency_name:v('currency_name'),start_date:v('statement_start'),end_date:v('statement_end'),output_format:v('statement_format')})}
 function addStandard(){try{add('standard',{report_name:v('standard'),fields:JSON.parse(document.getElementById('fields').value)})}catch(e){msg('Некорректный JSON','error')}}
 function renderMemorialUsers(){let box=document.getElementById('memorial_users'),selected=new Set([...box.querySelectorAll('input:checked')].map(x=>x.value)),q=v('memorial_filter').toLocaleLowerCase('ru-RU');box.innerHTML='';memorialUsers.filter(u=>u.name.toLocaleLowerCase('ru-RU').includes(q)).forEach(u=>{let label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=u.id;input.checked=selected.has(u.id);label.append(input,document.createTextNode(' '+u.name));box.append(label)})}
 async function loadMemorialUsers(){try{msg('Загрузка сотрудников…');let x=await api('/api/memorial-users',{branch_id:v('memorial_branch')});memorialUsers=x.users;renderMemorialUsers();msg('Сотрудники загружены')}catch(e){msg(e.message,'error')}}
-function addMemorialOrder(){let users=[...document.querySelectorAll('#memorial_users input:checked')].map(x=>x.value);add('memorial_order',{branch_id:v('memorial_branch'),office_id:v('memorial_office'),report_date:v('memorial_date'),users,print_after_download:document.getElementById('memorial_print').checked})}
+function addMemorialOrder(){let users=[...document.querySelectorAll('#memorial_users input:checked')].map(x=>x.value);add('memorial_order',{branch_id:v('memorial_branch'),office_id:v('memorial_office'),start_date:v('memorial_start_date'),end_date:v('memorial_end_date'),users,print_after_download:document.getElementById('memorial_print').checked})}
 function addTemplate(){add('template',{path:v('template_path'),date:v('template_date'),cache:document.getElementById('template_cache').checked,formula:document.getElementById('template_formula').checked})}
 async function loadAdditional(){try{let x=await api('/api/additional');additional=x.items;let s=document.getElementById('additional');s.innerHTML='';additional.forEach((a,i)=>s.add(new Option((a.group? a.group+': ':'')+a.name,i)));msg('Каталог загружен')}catch(e){msg(e.message,'error')}}
 function addAdditional(){let a=additional[+v('additional')];if(!a){msg('Сначала загрузите каталог','error');return}add('additional',{name:a.name,type:a.type,start:v('additional_start'),end:v('additional_end')})}
@@ -398,8 +427,8 @@ def make_handler(service: ReportService) -> type[BaseHTTPRequestHandler]:
                 elif path == "/api/queue":
                     payload = {"queue": service.queue()}
                 elif path == "/api/add":
-                    service.add(str(data.get("kind", "")), data.get("values", {}))
-                    payload = {"queue": service.queue()}
+                    summary = service.add(str(data.get("kind", "")), data.get("values", {}))
+                    payload = {"queue": service.queue(), "summary": summary}
                 elif path == "/api/move":
                     service.move(int(data["index"]), int(data["direction"]))
                     payload = {"queue": service.queue()}

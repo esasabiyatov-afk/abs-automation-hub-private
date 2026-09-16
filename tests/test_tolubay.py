@@ -91,6 +91,13 @@ class _FakeTolubayHandler(BaseHTTPRequestHandler):
                 ),
                 content_encoding="gzip",
             )
+        elif parsed.path == f"{ROOT}/GeneralBook/Transactions":
+            query = parse_qs(parsed.query)
+            if query.get("Branch.Value") != ["1022"] or query.get("Office.Value") != ["1057"]:
+                self.send_error(400)
+                return
+            row = b"".join(b"<td>x</td>" for _ in range(16))
+            self._send(b'<table id="table-transactions"><tbody><tr>' + row + b"</tr></tbody></table>")
         elif parsed.path == f"{ROOT}/Management/AdditionalReport":
             model = {
                 "Filter": {
@@ -435,6 +442,26 @@ class TolubayClientTests(unittest.TestCase):
                 "Tolubay-ABS-Reports-Reader/1.0",
             ),
             _FakeTolubayHandler.request_headers,
+        )
+
+    def test_operational_journal_count_is_read_only(self) -> None:
+        client = self._logged_in_client()
+        self.assertEqual(
+            client.operational_transaction_count(
+                branch_id="1022",
+                office_id="1057",
+                user_id="17",
+                transaction_date="15.09.2026",
+            ),
+            1,
+        )
+        self.assertTrue(
+            any(
+                method == "GET"
+                and path.startswith(f"{ROOT}/GeneralBook/Transactions?")
+                and "User.Value=17" in path
+                for method, path, _ in _FakeTolubayHandler.requests
+            )
         )
 
     def test_additional_report_catalogue_and_job_download(self) -> None:
