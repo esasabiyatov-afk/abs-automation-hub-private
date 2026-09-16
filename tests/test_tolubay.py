@@ -183,6 +183,20 @@ class _FakeTolubayHandler(BaseHTTPRequestHandler):
                 </td></tr></tbody></table>
                 """.encode("utf-8")
             )
+        elif self.path == f"{ROOT}/GeneralBook/Transactions/List":
+            fields = parse_qs(body.decode())
+            if (
+                fields.get("Branch.Value") != ["1022"]
+                or fields.get("Office.Value") != ["1057"]
+                or fields.get("User.Value") != ["17"]
+                or fields.get("TransactionDate.Date") != ["15.09.2026"]
+            ):
+                self.send_error(400)
+                return
+            if self.headers.get("X-Requested-With") != "XMLHttpRequest":
+                self.send_error(400)
+                return
+            self._json({"State": 0, "Message": None, "Transactions": [{"Position": 1}]})
         elif self.path == f"{ROOT}/Management/ExcelTemplatesReportJob":
             context = {
                 "FileData": "redacted",
@@ -457,10 +471,10 @@ class TolubayClientTests(unittest.TestCase):
         )
         self.assertTrue(
             any(
-                method == "GET"
-                and path.startswith(f"{ROOT}/GeneralBook/Transactions?")
-                and "User.Value=17" in path
-                for method, path, _ in _FakeTolubayHandler.requests
+                method == "POST"
+                and path == f"{ROOT}/GeneralBook/Transactions/List"
+                and b"User.Value=17" in body
+                for method, path, body in _FakeTolubayHandler.requests
             )
         )
 

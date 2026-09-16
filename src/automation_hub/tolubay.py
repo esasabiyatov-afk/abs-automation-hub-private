@@ -42,6 +42,7 @@ ADDITIONAL_RUN_JOB = f"{ADDITIONAL_REPORT_JOB}/Run"
 MEMORIAL_ORDER_REPORT = f"{ROOT}/MemorialOrderReport"
 BRANCH_USERS_SELECT_OPTIONS = f"{ROOT}/Common/CommonParams/GetBranchUsersParamSelectOptions"
 GENERAL_BOOK_TRANSACTIONS = f"{ROOT}/GeneralBook/Transactions"
+GENERAL_BOOK_TRANSACTIONS_LIST = f"{GENERAL_BOOK_TRANSACTIONS}/List"
 MEMORIAL_ORDER_PAGE_HEADERS = {
     # ABS returns the populated report form to its ordinary browser navigation.
     # Supplying these non-sensitive representation headers keeps the HTTP adapter
@@ -447,6 +448,10 @@ class TolubayClient:
                     ADDITIONAL_REPORT_JOB,
                     ADDITIONAL_CHECK_SERVICE,
                     ADDITIONAL_RUN_JOB,
+                    # This endpoint is the AJAX read-only filter behind the
+                    # operational-journal screen.  It only returns rows; it
+                    # neither creates nor changes a transaction.
+                    GENERAL_BOOK_TRANSACTIONS_LIST,
                     *REPORT_EXECUTE_PATHS,
                 }
             )
@@ -834,17 +839,46 @@ class TolubayClient:
             "Office.Value": identifiers["office_id"],
             "User.All": "False",
             "User.Value": identifiers["user_id"],
+            # The MVC action binds the whole displayed form.  Although these
+            # controls are inactive when their corresponding "All" value is
+            # true, omitting them leaves nested filter models null in ABS.
+            "User.Text": "",
             "TransactionDate.Date": normalized_date,
             "Currency.All": "True",
+            "Currency.Value": "417",
             "ProgramModule.All": "True",
+            "ProgramModule.Value": "Accountant",
             "AllAccounts": "True",
+            "trnsactionParam.DebetAccountNo": "",
+            "trnsactionParam.CreditAccountNo": "",
+            "trnsactionParam.Sumn": "",
+            "trnsactionParam.Position": "",
+            "trnsactionParam.DocumentNo": "",
+            "trnsactionParam.Comment": "",
         }
-        parser = _HtmlTablesParser()
-        parser.feed(self._get_text(f"{GENERAL_BOOK_TRANSACTIONS}?{urlencode(fields)}"))
-        table = next((item for item in parser.tables if item.get("id") == "table-transactions"), None)
-        if table is None:
-            raise ProtocolError("ABS не вернула таблицу операционного дневника")
-        return sum(1 for row, _ in table["rows"] if len(row) >= 15)
+        # The display page ignores query parameters and initializes an empty
+        # model.  The real ABS form sends this exact, read-only AJAX POST to
+        # populate the journal, so a GET here would falsely report zero rows.
+        body, _, _ = self._post_form(
+            GENERAL_BOOK_TRANSACTIONS_LIST,
+            fields,
+            headers={
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "X-Requested-With": "XMLHttpRequest",
+                "Referer": urljoin(self.config.base_url, GENERAL_BOOK_TRANSACTIONS),
+            },
+        )
+        try:
+            payload = json.loads(body.decode("utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ProtocolError("ABS вернула некорректный ответ операционного дневника") from exc
+        if not isinstance(payload, dict) or payload.get("State") != 0:
+            message = payload.get("Message") if isinstance(payload, dict) else None
+            raise ProtocolError(f"ABS не загрузила операционный дневник: {message or 'неизвестная ошибка'}")
+        transactions = payload.get("Transactions")
+        if not isinstance(transactions, list):
+            raise ProtocolError("ABS не вернула список проводок операционного дневника")
+        return len(transactions)
 
     def _create_additional_report_job(
         self,
