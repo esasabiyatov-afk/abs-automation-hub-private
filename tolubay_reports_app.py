@@ -19,7 +19,6 @@ if SOURCE_DIR.is_dir() and str(SOURCE_DIR) not in sys.path:
     sys.path.insert(0, str(SOURCE_DIR))
 
 from automation_hub.tolubay import AdditionalReportItem, TolubayClient, TolubayConfig  # noqa: E402
-from automation_hub.memorial_order_xls import process_memorial_order_xls  # noqa: E402
 
 
 MEMORIAL_ORDER_REPORT = "Сводный мемориальный ордер"
@@ -77,12 +76,11 @@ def memorial_order_fields(
     *,
     branch_id: str,
     office_id: str,
-    user_id: str,
     report_date: str,
 ) -> dict[str, str]:
-    """Build the exact read-only fields for one employee's memorial order."""
-    if not all(value.strip() for value in (branch_id, office_id, user_id, report_date)):
-        raise ValueError("Для мемориального ордера заполните филиал, отделение, сотрудника и дату")
+    """Build the read-only fields for all staff in one office's memorial order."""
+    if not all(value.strip() for value in (branch_id, office_id, report_date)):
+        raise ValueError("Для мемориального ордера заполните филиал, отделение и дату")
     fields = form_defaults(report["forms"][0]["fields"])
     fields.update(
         {
@@ -90,8 +88,7 @@ def memorial_order_fields(
             "Branch.Value": branch_id.strip(),
             "Office.All": "False",
             "Office.Value": office_id.strip(),
-            "User.All": "False",
-            "User.Value": user_id.strip(),
+            "User.All": "True",
             "Currency.All": "True",
             "OfficeUsersOperations.Value": "False",
             "IncludeFinalTurnovers.Value": "false",
@@ -158,36 +155,21 @@ class ReportService:
             branch_id = str(values.get("branch_id", "")).strip()
             office_id = str(values.get("office_id", "")).strip()
             report_date = str(values.get("report_date", "")).strip()
-            users = values.get("users")
-            if not isinstance(users, list) or not users:
-                raise ValueError("Добавьте хотя бы одного сотрудника")
-            tasks: list[ReportTask] = []
             report = self.forms[MEMORIAL_ORDER_REPORT]
-            for user in users:
-                if not isinstance(user, dict):
-                    raise ValueError("Некорректные данные сотрудника")
-                user_id = str(user.get("id", "")).strip()
-                user_name = str(user.get("name", "")).strip() or user_id
-                fields = memorial_order_fields(
-                    report,
-                    branch_id=branch_id,
-                    office_id=office_id,
-                    user_id=user_id,
-                    report_date=report_date,
-                )
-                tasks.append(
+            fields = memorial_order_fields(
+                report,
+                branch_id=branch_id,
+                office_id=office_id,
+                report_date=report_date,
+            )
+            with self.lock:
+                self.tasks.append(
                     ReportTask(
                         "memorial_order",
-                        f"Мемориальный ордер: {user_name} ({report_date})",
-                        {
-                            "fields": fields,
-                            "user_name": user_name,
-                            "print_after_processing": bool(values.get("print_after_processing")),
-                        },
+                        f"Мемориальный ордер: все сотрудники ({report_date})",
+                        {"fields": fields},
                     )
                 )
-            with self.lock:
-                self.tasks.extend(tasks)
             return
         elif kind == "template":
             if not Path(str(values.get("path", ""))).is_file() or not str(values.get("date", "")).strip():
@@ -247,11 +229,7 @@ class ReportService:
                     self.forms[MEMORIAL_ORDER_REPORT]["forms"][0]["action"],
                     task.values["fields"],
                     output,
-                    fallback_name=f"memorial-order-{task.values['user_name']}",
-                )
-                process_memorial_order_xls(
-                    result.path,
-                    print_after_processing=bool(task.values["print_after_processing"]),
+                    fallback_name="memorial-order",
                 )
             elif task.kind == "template":
                 result = client.generate_template_report(
@@ -277,28 +255,28 @@ PAGE = r"""<!doctype html><html lang="ru"><meta charset="utf-8">
 <title>Tolubay — отчёты</title>
 <style>
 body{font:14px Segoe UI,Arial,sans-serif;margin:22px;max-width:1080px;color:#17212b}h1{margin-top:0}
-section{border:1px solid #d6dce5;border-radius:8px;padding:15px;margin:12px 0}label{display:block;margin:7px 0}
+section{border:1px solid #d6dce5;border-radius:8px;padding:15px;margin:12px 0}label{display:block;margin:7px 0}.hidden{display:none}
 input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{width:100%;box-sizing:border-box}textarea{height:175px;font-family:Consolas,monospace}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.row{display:flex;gap:8px;align-items:center}.row>*{width:auto}.note{color:#56616f}.ok{color:#187342}.error{color:#b42318}ol{padding-left:28px}li{margin:6px 0}
 </style><body><h1>Tolubay: отчёты и очередь печати</h1>
 <p class="note">Только получение и скачивание. Очередь не сохраняется, изменение данных ABS недоступно.</p>
 <section><h2>Подключение</h2><div class="grid"><label>Логин<input id="login"></label><label>Пароль<input id="password" type="password"></label></div>
 <label>Папка для скачанных отчётов<input id="output" value="ready-reports"></label><button onclick="connect()">Подключиться</button> <span id="status"></span></section>
-<section><h2>Выписка по счёту</h2><div class="grid">
+<section class="hidden" aria-hidden="true"><h2>Выписка по счёту</h2><div class="grid">
 <label>ID клиента<input id="customer_id"></label><label>Номер счёта<input id="account_no"></label>
 <label>Код валюты<input id="currency_id" value="417"></label><label>Валюта<input id="currency_name" value="KGS"></label>
 <label>Дата с<input id="statement_start"></label><label>Дата по<input id="statement_end"></label>
 <label>Формат<select id="statement_format"><option>PDF</option><option>XLS</option></select></label></div>
 <button onclick="addStatement()">Добавить в очередь</button></section>
-<section><h2>Стандартный отчёт</h2><label>Вид отчёта<select id="standard" onchange="setDefaults()"></select></label>
+<section class="hidden" aria-hidden="true"><h2>Стандартный отчёт</h2><label>Вид отчёта<select id="standard" onchange="setDefaults()"></select></label>
 <label>Параметры JSON (предзаполнены по форме ABS; их можно отредактировать)<textarea id="fields"></textarea></label>
 <button onclick="addStandard()">Добавить в очередь</button></section>
-<section><h2>Документ дня: сводный мемориальный ордер</h2><p class="note">Для каждого сотрудника будет сформирован отдельный XLS-файл.</p><div class="grid">
+<section><h2>Документ дня: сводный мемориальный ордер</h2><p class="note">Сотрудники выбранного отделения подставляются ABS автоматически. Код сотрудника и ФИО вводить не нужно.</p><div class="grid">
 <label>Филиал<select id="memorial_branch"></select></label><label>Отделение<select id="memorial_office"></select></label>
-<label>Дата<input id="memorial_date"></label></div><label>Сотрудники: одна строка на человека в виде <code>код ABS | имя для очереди</code><textarea id="memorial_users" placeholder="123 | Иванова А.А."></textarea></label><label><input type="checkbox" id="memorial_print"> Печатать после обработки на принтере Windows по умолчанию</label><button onclick="addMemorialOrder()">Добавить сотрудников в очередь</button></section>
-<section><h2>Отчёт по XLSX-шаблону</h2><div class="grid"><label>Путь к XLSX-шаблону<input id="template_path"></label><label>Дата отчёта<input id="template_date"></label></div>
+<label>Дата<input id="memorial_date"></label></div><button onclick="addMemorialOrder()">Добавить в очередь</button></section>
+<section class="hidden" aria-hidden="true"><h2>Отчёт по XLSX-шаблону</h2><div class="grid"><label>Путь к XLSX-шаблону<input id="template_path"></label><label>Дата отчёта<input id="template_date"></label></div>
 <label><input type="checkbox" id="template_cache"> Использовать кэш ABS</label><label><input type="checkbox" id="template_formula"> Формулы как комментарии</label><button onclick="addTemplate()">Добавить в очередь</button></section>
-<section><h2>Дополнительный отчёт</h2><button onclick="loadAdditional()">Загрузить каталог ABS</button><label>Отчёт<select id="additional"></select></label>
+<section class="hidden" aria-hidden="true"><h2>Дополнительный отчёт</h2><button onclick="loadAdditional()">Загрузить каталог ABS</button><label>Отчёт<select id="additional"></select></label>
 <div class="grid"><label>Дата с<input id="additional_start"></label><label>Дата по<input id="additional_end"></label></div><button onclick="addAdditional()">Добавить в очередь</button></section>
 <section><h2>Очередь / порядок ручной печати</h2><p class="note">Сверху вниз — порядок подготовки к печати. Приложение не отправляет файлы на принтер автоматически.</p>
 <ol id="queue"></ol><div class="row"><button onclick="download()">Скачать по порядку</button></div><p id="result"></p></section>
@@ -317,7 +295,7 @@ async function connect(){try{msg('Подключение…');await api('/api/co
 async function add(kind,values){try{await api('/api/add',{kind,values});refresh()}catch(e){msg(e.message,'error')}}
 function addStatement(){add('statement',{customer_id:v('customer_id'),account_no:v('account_no'),currency_id:v('currency_id'),currency_name:v('currency_name'),start_date:v('statement_start'),end_date:v('statement_end'),output_format:v('statement_format')})}
 function addStandard(){try{add('standard',{report_name:v('standard'),fields:JSON.parse(document.getElementById('fields').value)})}catch(e){msg('Некорректный JSON','error')}}
-function addMemorialOrder(){let users=v('memorial_users').split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{let [id,...name]=line.split('|');return {id:id.trim(),name:name.join('|').trim()}});add('memorial_order',{branch_id:v('memorial_branch'),office_id:v('memorial_office'),report_date:v('memorial_date'),users,print_after_processing:document.getElementById('memorial_print').checked})}
+function addMemorialOrder(){add('memorial_order',{branch_id:v('memorial_branch'),office_id:v('memorial_office'),report_date:v('memorial_date')})}
 function addTemplate(){add('template',{path:v('template_path'),date:v('template_date'),cache:document.getElementById('template_cache').checked,formula:document.getElementById('template_formula').checked})}
 async function loadAdditional(){try{let x=await api('/api/additional');additional=x.items;let s=document.getElementById('additional');s.innerHTML='';additional.forEach((a,i)=>s.add(new Option((a.group? a.group+': ':'')+a.name,i)));msg('Каталог загружен')}catch(e){msg(e.message,'error')}}
 function addAdditional(){let a=additional[+v('additional')];if(!a){msg('Сначала загрузите каталог','error');return}add('additional',{name:a.name,type:a.type,start:v('additional_start'),end:v('additional_end')})}

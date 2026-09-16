@@ -3,7 +3,6 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
 
 from automation_hub.tolubay import ReportDownloadResult
 from tolubay_reports_app import (
@@ -31,7 +30,7 @@ class ReportAppTests(unittest.TestCase):
         self.assertRegex(values["Period.StartDate"], r"^\d{2}\.\d{2}\.\d{4}$")
         self.assertNotIn("disabled", values)
 
-    def test_memorial_order_fields_select_one_user_and_xls(self) -> None:
+    def test_memorial_order_fields_select_all_users_and_xls(self) -> None:
         report = {
             "forms": [
                 {"fields": [
@@ -46,15 +45,14 @@ class ReportAppTests(unittest.TestCase):
             report,
             branch_id="1022",
             office_id="1057",
-            user_id="17",
             report_date="15.09.2026",
         )
         self.assertEqual(fields["Branch.All"], "False")
         self.assertEqual(fields["Branch.Value"], "1022")
         self.assertEqual(fields["Office.All"], "False")
         self.assertEqual(fields["Office.Value"], "1057")
-        self.assertEqual(fields["User.All"], "False")
-        self.assertEqual(fields["User.Value"], "17")
+        self.assertEqual(fields["User.All"], "True")
+        self.assertNotIn("User.Value", fields)
         self.assertEqual(fields["Value"], "XLS")
 
     def test_report_select_options_returns_display_names_and_codes(self) -> None:
@@ -64,7 +62,7 @@ class ReportAppTests(unittest.TestCase):
             [{"value": "1022", "label": "Филиал"}],
         )
 
-    def test_memorial_order_adds_one_task_per_employee(self) -> None:
+    def test_memorial_order_adds_one_task_for_all_employees(self) -> None:
         service = ReportService(insecure=False)
         service.add(
             "memorial_order",
@@ -72,18 +70,16 @@ class ReportAppTests(unittest.TestCase):
                 "branch_id": "1022",
                 "office_id": "1057",
                 "report_date": "15.09.2026",
-                "print_after_processing": True,
-                "users": [{"id": "17", "name": "Иванова А.А."}, {"id": "18", "name": "Петров П.П."}],
             },
         )
         queue = service.queue()
-        self.assertEqual(len(queue), 2)
-        self.assertTrue(all(task["kind"] == "memorial_order" for task in queue))
-        self.assertTrue(all(task["values"]["fields"]["Value"] == "XLS" for task in queue))
-        self.assertTrue(all(task["values"]["print_after_processing"] for task in queue))
+        self.assertEqual(len(queue), 1)
+        self.assertEqual(queue[0]["kind"], "memorial_order")
+        self.assertEqual(queue[0]["values"]["fields"]["Value"], "XLS")
+        self.assertEqual(queue[0]["values"]["fields"]["User.All"], "True")
         self.assertEqual(MEMORIAL_ORDER_REPORT, "Сводный мемориальный ордер")
 
-    def test_memorial_order_download_prepares_each_xls_file(self) -> None:
+    def test_memorial_order_download_keeps_abs_file_unmodified(self) -> None:
         class FakeClient:
             def execute_report(self, *args: object, **kwargs: object) -> ReportDownloadResult:
                 path = Path(args[2]) / "report.xls"
@@ -95,9 +91,8 @@ class ReportAppTests(unittest.TestCase):
         service.client = FakeClient()  # type: ignore[assignment]
         service.add(
             "memorial_order",
-            {"branch_id": "1022", "office_id": "1057", "report_date": "15.09.2026", "users": [{"id": "17"}]},
+            {"branch_id": "1022", "office_id": "1057", "report_date": "15.09.2026"},
         )
-        with TemporaryDirectory() as directory, patch("tolubay_reports_app.process_memorial_order_xls") as process:
+        with TemporaryDirectory() as directory:
             paths = service.download(directory)
         self.assertEqual(len(paths), 1)
-        process.assert_called_once_with(Path(paths[0]), print_after_processing=False)
