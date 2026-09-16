@@ -71,6 +71,11 @@ class _FakeTolubayHandler(BaseHTTPRequestHandler):
                 b'<select name="GeneralInfoModel.NationalityId">'
                 b'<option value="1" selected>Country</option></select></form>'
             )
+        elif parsed.path == f"{ROOT}/MemorialOrderReport":
+            self._send(
+                b'<select name="User.Value"><option value="17">First user</option>'
+                b'<option value="18">Second user</option></select>'
+            )
         elif parsed.path == f"{ROOT}/Management/AdditionalReport":
             model = {
                 "Filter": {
@@ -398,6 +403,15 @@ class TolubayClientTests(unittest.TestCase):
         )
         self.assertEqual(result.file_name, "statement.xls")
         self.assertTrue(result.path.read_bytes().startswith(b"\xd0\xcf\x11\xe0"))
+
+    def test_memorial_order_user_directory_is_read_only(self) -> None:
+        client = self._logged_in_client()
+        users = client.list_memorial_order_users()
+        self.assertEqual([(user.user_id, user.name) for user in users], [("17", "First user"), ("18", "Second user")])
+        self.assertIn(
+            ("GET", f"{ROOT}/MemorialOrderReport"),
+            [(method, path) for method, path, _ in _FakeTolubayHandler.requests],
+        )
 
     def test_additional_report_catalogue_and_job_download(self) -> None:
         client = self._logged_in_client()

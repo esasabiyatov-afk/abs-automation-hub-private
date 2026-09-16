@@ -37,6 +37,7 @@ ADDITIONAL_REPORT_LOAD = f"{ADDITIONAL_REPORT}/Load"
 ADDITIONAL_REPORT_JOB = f"{ROOT}/Management/AdditionalReportJob"
 ADDITIONAL_CHECK_SERVICE = f"{ADDITIONAL_REPORT_JOB}/CheckService"
 ADDITIONAL_RUN_JOB = f"{ADDITIONAL_REPORT_JOB}/Run"
+MEMORIAL_ORDER_REPORT = f"{ROOT}/MemorialOrderReport"
 
 CUSTOMER_SEARCH_FIELDS = frozenset(
     {
@@ -256,6 +257,42 @@ class _FormValuesParser(HTMLParser):
             self._in_target_form = False
 
 
+class _NamedSelectOptionsParser(HTMLParser):
+    """Read options from one ABS select element without submitting a form."""
+
+    def __init__(self, select_name: str) -> None:
+        super().__init__()
+        self.select_name = select_name
+        self.options: list[tuple[str, str]] = []
+        self._in_target_select = False
+        self._option_value: str | None = None
+        self._option_text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = dict(attrs)
+        tag = tag.lower()
+        if tag == "select":
+            self._in_target_select = values.get("name") == self.select_name
+        elif tag == "option" and self._in_target_select:
+            self._option_value = values.get("value") or ""
+            self._option_text = []
+
+    def handle_data(self, data: str) -> None:
+        if self._option_value is not None:
+            self._option_text.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag == "option" and self._option_value is not None:
+            label = " ".join("".join(self._option_text).split())
+            if self._option_value and label:
+                self.options.append((self._option_value, label))
+            self._option_value = None
+            self._option_text = []
+        elif tag == "select":
+            self._in_target_select = False
+
+
 class _LinksParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
@@ -332,6 +369,12 @@ class AdditionalReportItem:
     report_type: str
     report_group: str
     data: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class MemorialOrderUser:
+    user_id: str
+    name: str
 
 
 class TolubayClient:
@@ -702,6 +745,22 @@ class TolubayClient:
                 )
             )
         return result
+
+    def list_memorial_order_users(self) -> list[MemorialOrderUser]:
+        """Read the current ABS employee directory used by the memorial-order form."""
+        self._require_authenticated()
+        parser = _NamedSelectOptionsParser("User.Value")
+        parser.feed(self._get_text(MEMORIAL_ORDER_REPORT))
+        users: list[MemorialOrderUser] = []
+        seen: set[str] = set()
+        for user_id, name in parser.options:
+            if not user_id.isdigit() or user_id in seen:
+                continue
+            seen.add(user_id)
+            users.append(MemorialOrderUser(user_id=user_id, name=name))
+        if not users:
+            raise ProtocolError("ABS не вернула список сотрудников для мемориального ордера")
+        return users
 
     def _create_additional_report_job(
         self,
