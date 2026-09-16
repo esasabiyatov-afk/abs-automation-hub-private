@@ -88,7 +88,7 @@ class ReportAppTests(unittest.TestCase):
         self.assertTrue(all(task["values"]["print_after_download"] for task in queue))
         self.assertEqual(MEMORIAL_ORDER_REPORT, "Сводный мемориальный ордер")
 
-    def test_memorial_order_download_keeps_abs_file_unmodified_without_printing(self) -> None:
+    def test_memorial_order_download_processes_without_printing(self) -> None:
         class FakeClient:
             def execute_report(self, *args: object, **kwargs: object) -> ReportDownloadResult:
                 path = Path(args[2]) / "report.xls"
@@ -103,7 +103,7 @@ class ReportAppTests(unittest.TestCase):
             "memorial_order",
             {"branch_id": "1022", "office_id": "1057", "report_date": "15.09.2026", "users": ["17"]},
         )
-        with TemporaryDirectory() as directory, patch("tolubay_reports_app.print_memorial_order_xls") as printer:
+        with TemporaryDirectory() as directory, patch("tolubay_reports_app.process_memorial_order_xls") as processor:
             paths = service.download(directory)
         self.assertEqual(len(paths), 1)
-        printer.assert_not_called()
+        processor.assert_called_once_with(Path(paths[0]), print_after_processing=False)

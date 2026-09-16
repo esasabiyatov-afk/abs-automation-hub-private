@@ -5,15 +5,15 @@ from pathlib import Path
 
 
 class MemorialOrderProcessingError(RuntimeError):
-    """The downloaded memorial-order file could not be sent to the printer."""
+    """The downloaded memorial-order file could not be prepared for printing."""
 
 
 def _processor_path() -> Path:
     return Path(__file__).with_name("memorial_order_xls.ps1")
 
 
-def print_memorial_order_xls(path: str | Path) -> Path:
-    """Print one ABS XLS/XLSX file without changing its contents or layout."""
+def process_memorial_order_xls(path: str | Path, *, print_after_processing: bool = False) -> Path:
+    """Prepare one downloaded XLS/XLSX memorial order in place for printing."""
     report_path = Path(path).expanduser().resolve()
     if report_path.suffix.lower() not in {".xls", ".xlsx"}:
         raise ValueError("Мемориальный ордер должен быть файлом XLS или XLSX")
@@ -35,7 +35,7 @@ def print_memorial_order_xls(path: str | Path) -> Path:
             str(script_path),
             "-InputPath",
             str(report_path),
-            "-Print",
+            *( ["-PrintAfterProcessing"] if print_after_processing else [] ),
         ],
         capture_output=True,
         text=True,
@@ -45,15 +45,10 @@ def print_memorial_order_xls(path: str | Path) -> Path:
     )
     if completed.returncode:
         detail = completed.stderr.strip() or completed.stdout.strip() or "неизвестная ошибка Excel"
-        raise MemorialOrderProcessingError(f"Не удалось напечатать мемориальный ордер: {detail}")
+        raise MemorialOrderProcessingError(f"Не удалось подготовить мемориальный ордер: {detail}")
     return report_path
 
 
-def process_memorial_order_xls(path: str | Path, *, print_after_processing: bool = False) -> Path:
-    """Compatibility wrapper; no longer changes the downloaded ABS file."""
-    if print_after_processing:
-        return print_memorial_order_xls(path)
-    report_path = Path(path).expanduser().resolve()
-    if not report_path.is_file():
-        raise FileNotFoundError(report_path)
-    return report_path
+def print_memorial_order_xls(path: str | Path) -> Path:
+    """Compatibility helper for explicitly requested print processing."""
+    return process_memorial_order_xls(path, print_after_processing=True)

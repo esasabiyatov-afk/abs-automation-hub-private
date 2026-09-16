@@ -18,7 +18,7 @@ SOURCE_DIR = SCRIPT_DIR / "src"
 if SOURCE_DIR.is_dir() and str(SOURCE_DIR) not in sys.path:
     sys.path.insert(0, str(SOURCE_DIR))
 
-from automation_hub.memorial_order_xls import print_memorial_order_xls  # noqa: E402
+from automation_hub.memorial_order_xls import process_memorial_order_xls  # noqa: E402
 from automation_hub.tolubay import (  # noqa: E402
     AdditionalReportItem,
     MemorialOrderUser,
@@ -261,8 +261,10 @@ class ReportService:
                     output,
                     fallback_name=f"memorial-order-{task.values['user_name']}",
                 )
-                if task.values["print_after_download"]:
-                    print_memorial_order_xls(result.path)
+                process_memorial_order_xls(
+                    result.path,
+                    print_after_processing=bool(task.values["print_after_download"]),
+                )
             elif task.kind == "template":
                 result = client.generate_template_report(
                     task.values["path"],
@@ -305,7 +307,7 @@ input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{widt
 <button onclick="addStandard()">Добавить в очередь</button></section>
 <section><h2>Документ дня: сводный мемориальный ордер</h2><p class="note">Выберите сотрудников из актуального справочника ABS. Их внутренние коды не показываются и вручную не вводятся.</p><div class="grid">
 <label>Филиал<select id="memorial_branch"></select></label><label>Отделение<select id="memorial_office"></select></label>
-<label>Дата<input id="memorial_date"></label></div><button onclick="loadMemorialUsers()">Загрузить сотрудников ABS</button><label>Поиск сотрудника<input id="memorial_filter" oninput="renderMemorialUsers()"></label><div id="memorial_users" class="users"></div><label><input type="checkbox" id="memorial_print"> Печатать каждый файл после скачивания на принтере Windows по умолчанию</label><button onclick="addMemorialOrder()">Добавить выбранных в очередь</button></section>
+<label>Дата<input id="memorial_date"></label></div><button onclick="loadMemorialUsers()">Загрузить сотрудников ABS</button><label>Поиск сотрудника<input id="memorial_filter" oninput="renderMemorialUsers()"></label><div id="memorial_users" class="users"></div><label><input type="checkbox" id="memorial_print"> Печатать каждый обработанный файл на принтере Windows по умолчанию</label><button onclick="addMemorialOrder()">Добавить выбранных в очередь</button></section>
 <section class="hidden" aria-hidden="true"><h2>Отчёт по XLSX-шаблону</h2><div class="grid"><label>Путь к XLSX-шаблону<input id="template_path"></label><label>Дата отчёта<input id="template_date"></label></div>
 <label><input type="checkbox" id="template_cache"> Использовать кэш ABS</label><label><input type="checkbox" id="template_formula"> Формулы как комментарии</label><button onclick="addTemplate()">Добавить в очередь</button></section>
 <section class="hidden" aria-hidden="true"><h2>Дополнительный отчёт</h2><button onclick="loadAdditional()">Загрузить каталог ABS</button><label>Отчёт<select id="additional"></select></label>
