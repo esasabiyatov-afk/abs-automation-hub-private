@@ -5,20 +5,15 @@ from pathlib import Path
 
 
 class MemorialOrderProcessingError(RuntimeError):
-    """The downloaded memorial-order file could not be prepared for printing."""
+    """The downloaded memorial-order file could not be sent to the printer."""
 
 
 def _processor_path() -> Path:
     return Path(__file__).with_name("memorial_order_xls.ps1")
 
 
-def process_memorial_order_xls(path: str | Path, *, print_after_processing: bool = False) -> Path:
-    """Prepare one downloaded XLS/XLSX memorial order in place for printing.
-
-    The Windows Excel automation is intentionally isolated in PowerShell so the
-    Python application stays dependency-free and works with legacy ``.xls``
-    files returned by ABS.
-    """
+def print_memorial_order_xls(path: str | Path) -> Path:
+    """Print one ABS XLS/XLSX file without changing its contents or layout."""
     report_path = Path(path).expanduser().resolve()
     if report_path.suffix.lower() not in {".xls", ".xlsx"}:
         raise ValueError("Мемориальный ордер должен быть файлом XLS или XLSX")
@@ -40,7 +35,7 @@ def process_memorial_order_xls(path: str | Path, *, print_after_processing: bool
             str(script_path),
             "-InputPath",
             str(report_path),
-            *( ["-PrintAfterProcessing"] if print_after_processing else [] ),
+            "-Print",
         ],
         capture_output=True,
         text=True,
@@ -50,5 +45,15 @@ def process_memorial_order_xls(path: str | Path, *, print_after_processing: bool
     )
     if completed.returncode:
         detail = completed.stderr.strip() or completed.stdout.strip() or "неизвестная ошибка Excel"
-        raise MemorialOrderProcessingError(f"Не удалось подготовить мемориальный ордер: {detail}")
+        raise MemorialOrderProcessingError(f"Не удалось напечатать мемориальный ордер: {detail}")
+    return report_path
+
+
+def process_memorial_order_xls(path: str | Path, *, print_after_processing: bool = False) -> Path:
+    """Compatibility wrapper; no longer changes the downloaded ABS file."""
+    if print_after_processing:
+        return print_memorial_order_xls(path)
+    report_path = Path(path).expanduser().resolve()
+    if not report_path.is_file():
+        raise FileNotFoundError(report_path)
     return report_path

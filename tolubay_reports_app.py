@@ -18,7 +18,13 @@ SOURCE_DIR = SCRIPT_DIR / "src"
 if SOURCE_DIR.is_dir() and str(SOURCE_DIR) not in sys.path:
     sys.path.insert(0, str(SOURCE_DIR))
 
-from automation_hub.tolubay import AdditionalReportItem, TolubayClient, TolubayConfig  # noqa: E402
+from automation_hub.memorial_order_xls import print_memorial_order_xls  # noqa: E402
+from automation_hub.tolubay import (  # noqa: E402
+    AdditionalReportItem,
+    MemorialOrderUser,
+    TolubayClient,
+    TolubayConfig,
+)
 
 
 MEMORIAL_ORDER_REPORT = "Сводный мемориальный ордер"
@@ -76,11 +82,12 @@ def memorial_order_fields(
     *,
     branch_id: str,
     office_id: str,
+    user_id: str,
     report_date: str,
 ) -> dict[str, str]:
-    """Build the read-only fields for all staff in one office's memorial order."""
-    if not all(value.strip() for value in (branch_id, office_id, report_date)):
-        raise ValueError("Для мемориального ордера заполните филиал, отделение и дату")
+    """Build the read-only fields for one selected employee's memorial order."""
+    if not all(value.strip() for value in (branch_id, office_id, user_id, report_date)):
+        raise ValueError("Для мемориального ордера заполните филиал, отделение, сотрудника и дату")
     fields = form_defaults(report["forms"][0]["fields"])
     fields.update(
         {
@@ -88,7 +95,8 @@ def memorial_order_fields(
             "Branch.Value": branch_id.strip(),
             "Office.All": "False",
             "Office.Value": office_id.strip(),
-            "User.All": "True",
+            "User.All": "False",
+            "User.Value": user_id.strip(),
             "Currency.All": "True",
             "OfficeUsersOperations.Value": "False",
             "IncludeFinalTurnovers.Value": "false",
@@ -118,6 +126,7 @@ class ReportService:
         self.client: TolubayClient | None = None
         self.tasks: list[ReportTask] = []
         self.additional: list[AdditionalReportItem] = []
+        self.memorial_users: list[MemorialOrderUser] = []
         self.lock = threading.RLock()
 
     def connect(self, login: str, password: str) -> None:
@@ -127,6 +136,7 @@ class ReportService:
         client.login(login.strip(), password)
         with self.lock:
             self.client = client
+            self.memorial_users = []
 
     def require_client(self) -> TolubayClient:
         with self.lock:
@@ -137,6 +147,12 @@ class ReportService:
     def queue(self) -> list[dict[str, Any]]:
         with self.lock:
             return [{"index": index, **asdict(task)} for index, task in enumerate(self.tasks)]
+
+    def load_memorial_users(self) -> list[dict[str, str]]:
+        users = self.require_client().list_memorial_order_users()
+        with self.lock:
+            self.memorial_users = users
+        return [{"id": user.user_id, "name": user.name} for user in users]
 
     def add(self, kind: str, values: dict[str, Any]) -> None:
         if kind == "statement":
@@ -155,21 +171,35 @@ class ReportService:
             branch_id = str(values.get("branch_id", "")).strip()
             office_id = str(values.get("office_id", "")).strip()
             report_date = str(values.get("report_date", "")).strip()
-            report = self.forms[MEMORIAL_ORDER_REPORT]
-            fields = memorial_order_fields(
-                report,
-                branch_id=branch_id,
-                office_id=office_id,
-                report_date=report_date,
-            )
+            selected = values.get("users")
+            if not isinstance(selected, list) or not selected:
+                raise ValueError("Выберите хотя бы одного сотрудника")
             with self.lock:
-                self.tasks.append(
-                    ReportTask(
-                        "memorial_order",
-                        f"Мемориальный ордер: все сотрудники ({report_date})",
-                        {"fields": fields},
-                    )
+                directory = {user.user_id: user.name for user in self.memorial_users}
+            selected_ids = [str(user_id).strip() for user_id in selected]
+            if len(selected_ids) != len(set(selected_ids)) or any(user_id not in directory for user_id in selected_ids):
+                raise ValueError("Список сотрудников устарел. Загрузите его из ABS повторно")
+            report = self.forms[MEMORIAL_ORDER_REPORT]
+            tasks = [
+                ReportTask(
+                    "memorial_order",
+                    f"Мемориальный ордер: {directory[user_id]} ({report_date})",
+                    {
+                        "fields": memorial_order_fields(
+                            report,
+                            branch_id=branch_id,
+                            office_id=office_id,
+                            user_id=user_id,
+                            report_date=report_date,
+                        ),
+                        "user_name": directory[user_id],
+                        "print_after_download": bool(values.get("print_after_download")),
+                    },
                 )
+                for user_id in selected_ids
+            ]
+            with self.lock:
+                self.tasks.extend(tasks)
             return
         elif kind == "template":
             if not Path(str(values.get("path", ""))).is_file() or not str(values.get("date", "")).strip():
@@ -229,8 +259,10 @@ class ReportService:
                     self.forms[MEMORIAL_ORDER_REPORT]["forms"][0]["action"],
                     task.values["fields"],
                     output,
-                    fallback_name="memorial-order",
+                    fallback_name=f"memorial-order-{task.values['user_name']}",
                 )
+                if task.values["print_after_download"]:
+                    print_memorial_order_xls(result.path)
             elif task.kind == "template":
                 result = client.generate_template_report(
                     task.values["path"],
@@ -257,7 +289,7 @@ PAGE = r"""<!doctype html><html lang="ru"><meta charset="utf-8">
 body{font:14px Segoe UI,Arial,sans-serif;margin:22px;max-width:1080px;color:#17212b}h1{margin-top:0}
 section{border:1px solid #d6dce5;border-radius:8px;padding:15px;margin:12px 0}label{display:block;margin:7px 0}.hidden{display:none}
 input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{width:100%;box-sizing:border-box}textarea{height:175px;font-family:Consolas,monospace}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.row{display:flex;gap:8px;align-items:center}.row>*{width:auto}.note{color:#56616f}.ok{color:#187342}.error{color:#b42318}ol{padding-left:28px}li{margin:6px 0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.row{display:flex;gap:8px;align-items:center}.row>*{width:auto}.note{color:#56616f}.ok{color:#187342}.error{color:#b42318}ol{padding-left:28px}li{margin:6px 0}.users{border:1px solid #d6dce5;max-height:260px;overflow:auto;padding:6px}.users label{padding:3px;margin:0}.users input{width:auto}
 </style><body><h1>Tolubay: отчёты и очередь печати</h1>
 <p class="note">Только получение и скачивание. Очередь не сохраняется, изменение данных ABS недоступно.</p>
 <section><h2>Подключение</h2><div class="grid"><label>Логин<input id="login"></label><label>Пароль<input id="password" type="password"></label></div>
@@ -271,9 +303,9 @@ input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{widt
 <section class="hidden" aria-hidden="true"><h2>Стандартный отчёт</h2><label>Вид отчёта<select id="standard" onchange="setDefaults()"></select></label>
 <label>Параметры JSON (предзаполнены по форме ABS; их можно отредактировать)<textarea id="fields"></textarea></label>
 <button onclick="addStandard()">Добавить в очередь</button></section>
-<section><h2>Документ дня: сводный мемориальный ордер</h2><p class="note">Сотрудники выбранного отделения подставляются ABS автоматически. Код сотрудника и ФИО вводить не нужно.</p><div class="grid">
+<section><h2>Документ дня: сводный мемориальный ордер</h2><p class="note">Выберите сотрудников из актуального справочника ABS. Их внутренние коды не показываются и вручную не вводятся.</p><div class="grid">
 <label>Филиал<select id="memorial_branch"></select></label><label>Отделение<select id="memorial_office"></select></label>
-<label>Дата<input id="memorial_date"></label></div><button onclick="addMemorialOrder()">Добавить в очередь</button></section>
+<label>Дата<input id="memorial_date"></label></div><button onclick="loadMemorialUsers()">Загрузить сотрудников ABS</button><label>Поиск сотрудника<input id="memorial_filter" oninput="renderMemorialUsers()"></label><div id="memorial_users" class="users"></div><label><input type="checkbox" id="memorial_print"> Печатать каждый файл после скачивания на принтере Windows по умолчанию</label><button onclick="addMemorialOrder()">Добавить выбранных в очередь</button></section>
 <section class="hidden" aria-hidden="true"><h2>Отчёт по XLSX-шаблону</h2><div class="grid"><label>Путь к XLSX-шаблону<input id="template_path"></label><label>Дата отчёта<input id="template_date"></label></div>
 <label><input type="checkbox" id="template_cache"> Использовать кэш ABS</label><label><input type="checkbox" id="template_formula"> Формулы как комментарии</label><button onclick="addTemplate()">Добавить в очередь</button></section>
 <section class="hidden" aria-hidden="true"><h2>Дополнительный отчёт</h2><button onclick="loadAdditional()">Загрузить каталог ABS</button><label>Отчёт<select id="additional"></select></label>
@@ -281,7 +313,7 @@ input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{widt
 <section><h2>Очередь / порядок ручной печати</h2><p class="note">Сверху вниз — порядок подготовки к печати. Приложение не отправляет файлы на принтер автоматически.</p>
 <ol id="queue"></ol><div class="row"><button onclick="download()">Скачать по порядку</button></div><p id="result"></p></section>
 <script>
-let forms={}, additional=[];
+let forms={}, additional=[], memorialUsers=[];
 const today=()=>new Date().toLocaleDateString('ru-RU');
 for(const id of ['statement_start','statement_end','template_date','additional_start','additional_end','memorial_date'])document.getElementById(id).value=today();
 async function api(path,data={}){let r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});let x=await r.json();if(!r.ok)throw Error(x.error||'Ошибка');return x}
@@ -291,11 +323,13 @@ function setDefaults(){document.getElementById('fields').value=JSON.stringify(fo
 function setOptions(id,options){let s=document.getElementById(id);s.innerHTML='';options.forEach(o=>s.add(new Option(o.label,o.value)))}
 function render(q){let e=document.getElementById('queue');e.innerHTML='';q.forEach(t=>{let li=document.createElement('li');li.textContent=t.title+' ';for(const [s,d] of [['↑',-1],['↓',1],['Убрать',0]]){let b=document.createElement('button');b.textContent=s;b.onclick=async()=>{try{await api(d?'/api/move':'/api/remove',{index:t.index,direction:d});refresh()}catch(e){msg(e.message,'error')}};li.append(b)}e.append(li)})}
 async function refresh(){let x=await api('/api/queue');render(x.queue)}
-async function connect(){try{msg('Подключение…');await api('/api/connect',{login:v('login'),password:document.getElementById('password').value});document.getElementById('password').value='';msg('Подключено')}catch(e){msg(e.message,'error')}}
+async function connect(){try{msg('Подключение…');await api('/api/connect',{login:v('login'),password:document.getElementById('password').value});document.getElementById('password').value='';await loadMemorialUsers()}catch(e){msg(e.message,'error')}}
 async function add(kind,values){try{await api('/api/add',{kind,values});refresh()}catch(e){msg(e.message,'error')}}
 function addStatement(){add('statement',{customer_id:v('customer_id'),account_no:v('account_no'),currency_id:v('currency_id'),currency_name:v('currency_name'),start_date:v('statement_start'),end_date:v('statement_end'),output_format:v('statement_format')})}
 function addStandard(){try{add('standard',{report_name:v('standard'),fields:JSON.parse(document.getElementById('fields').value)})}catch(e){msg('Некорректный JSON','error')}}
-function addMemorialOrder(){add('memorial_order',{branch_id:v('memorial_branch'),office_id:v('memorial_office'),report_date:v('memorial_date')})}
+function renderMemorialUsers(){let box=document.getElementById('memorial_users'),q=v('memorial_filter').toLocaleLowerCase('ru-RU');box.innerHTML='';memorialUsers.filter(u=>u.name.toLocaleLowerCase('ru-RU').includes(q)).forEach(u=>{let label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=u.id;label.append(input,document.createTextNode(' '+u.name));box.append(label)})}
+async function loadMemorialUsers(){try{msg('Загрузка сотрудников…');let x=await api('/api/memorial-users');memorialUsers=x.users;renderMemorialUsers();msg('Сотрудники загружены')}catch(e){msg(e.message,'error')}}
+function addMemorialOrder(){let users=[...document.querySelectorAll('#memorial_users input:checked')].map(x=>x.value);add('memorial_order',{branch_id:v('memorial_branch'),office_id:v('memorial_office'),report_date:v('memorial_date'),users,print_after_download:document.getElementById('memorial_print').checked})}
 function addTemplate(){add('template',{path:v('template_path'),date:v('template_date'),cache:document.getElementById('template_cache').checked,formula:document.getElementById('template_formula').checked})}
 async function loadAdditional(){try{let x=await api('/api/additional');additional=x.items;let s=document.getElementById('additional');s.innerHTML='';additional.forEach((a,i)=>s.add(new Option((a.group? a.group+': ':'')+a.name,i)));msg('Каталог загружен')}catch(e){msg(e.message,'error')}}
 function addAdditional(){let a=additional[+v('additional')];if(!a){msg('Сначала загрузите каталог','error');return}add('additional',{name:a.name,type:a.type,start:v('additional_start'),end:v('additional_end')})}
@@ -350,6 +384,8 @@ def make_handler(service: ReportService) -> type[BaseHTTPRequestHandler]:
                 elif path == "/api/connect":
                     service.connect(str(data.get("login", "")), str(data.get("password", "")))
                     payload = {"ok": True}
+                elif path == "/api/memorial-users":
+                    payload = {"users": service.load_memorial_users()}
                 elif path == "/api/queue":
                     payload = {"queue": service.queue()}
                 elif path == "/api/add":

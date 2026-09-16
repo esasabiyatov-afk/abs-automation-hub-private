@@ -3,8 +3,9 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
-from automation_hub.tolubay import ReportDownloadResult
+from automation_hub.tolubay import MemorialOrderUser, ReportDownloadResult
 from tolubay_reports_app import (
     MEMORIAL_ORDER_REPORT,
     ReportService,
@@ -30,7 +31,7 @@ class ReportAppTests(unittest.TestCase):
         self.assertRegex(values["Period.StartDate"], r"^\d{2}\.\d{2}\.\d{4}$")
         self.assertNotIn("disabled", values)
 
-    def test_memorial_order_fields_select_all_users_and_xls(self) -> None:
+    def test_memorial_order_fields_select_one_user_and_xls(self) -> None:
         report = {
             "forms": [
                 {"fields": [
@@ -45,14 +46,15 @@ class ReportAppTests(unittest.TestCase):
             report,
             branch_id="1022",
             office_id="1057",
+            user_id="17",
             report_date="15.09.2026",
         )
         self.assertEqual(fields["Branch.All"], "False")
         self.assertEqual(fields["Branch.Value"], "1022")
         self.assertEqual(fields["Office.All"], "False")
         self.assertEqual(fields["Office.Value"], "1057")
-        self.assertEqual(fields["User.All"], "True")
-        self.assertNotIn("User.Value", fields)
+        self.assertEqual(fields["User.All"], "False")
+        self.assertEqual(fields["User.Value"], "17")
         self.assertEqual(fields["Value"], "XLS")
 
     def test_report_select_options_returns_display_names_and_codes(self) -> None:
@@ -62,24 +64,31 @@ class ReportAppTests(unittest.TestCase):
             [{"value": "1022", "label": "Филиал"}],
         )
 
-    def test_memorial_order_adds_one_task_for_all_employees(self) -> None:
+    def test_memorial_order_adds_one_task_per_selected_employee(self) -> None:
         service = ReportService(insecure=False)
+        service.memorial_users = [
+            MemorialOrderUser("17", "Первый сотрудник"),
+            MemorialOrderUser("18", "Второй сотрудник"),
+        ]
         service.add(
             "memorial_order",
             {
                 "branch_id": "1022",
                 "office_id": "1057",
                 "report_date": "15.09.2026",
+                "users": ["17", "18"],
+                "print_after_download": True,
             },
         )
         queue = service.queue()
-        self.assertEqual(len(queue), 1)
-        self.assertEqual(queue[0]["kind"], "memorial_order")
-        self.assertEqual(queue[0]["values"]["fields"]["Value"], "XLS")
-        self.assertEqual(queue[0]["values"]["fields"]["User.All"], "True")
+        self.assertEqual(len(queue), 2)
+        self.assertTrue(all(task["kind"] == "memorial_order" for task in queue))
+        self.assertTrue(all(task["values"]["fields"]["Value"] == "XLS" for task in queue))
+        self.assertEqual([task["values"]["fields"]["User.Value"] for task in queue], ["17", "18"])
+        self.assertTrue(all(task["values"]["print_after_download"] for task in queue))
         self.assertEqual(MEMORIAL_ORDER_REPORT, "Сводный мемориальный ордер")
 
-    def test_memorial_order_download_keeps_abs_file_unmodified(self) -> None:
+    def test_memorial_order_download_keeps_abs_file_unmodified_without_printing(self) -> None:
         class FakeClient:
             def execute_report(self, *args: object, **kwargs: object) -> ReportDownloadResult:
                 path = Path(args[2]) / "report.xls"
@@ -89,10 +98,12 @@ class ReportAppTests(unittest.TestCase):
 
         service = ReportService(insecure=False)
         service.client = FakeClient()  # type: ignore[assignment]
+        service.memorial_users = [MemorialOrderUser("17", "Первый сотрудник")]
         service.add(
             "memorial_order",
-            {"branch_id": "1022", "office_id": "1057", "report_date": "15.09.2026"},
+            {"branch_id": "1022", "office_id": "1057", "report_date": "15.09.2026", "users": ["17"]},
         )
-        with TemporaryDirectory() as directory:
+        with TemporaryDirectory() as directory, patch("tolubay_reports_app.print_memorial_order_xls") as printer:
             paths = service.download(directory)
         self.assertEqual(len(paths), 1)
+        printer.assert_not_called()
