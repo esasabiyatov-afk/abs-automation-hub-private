@@ -18,6 +18,10 @@ if SOURCE_DIR.is_dir() and str(SOURCE_DIR) not in __import__("sys").path:
     __import__("sys").path.insert(0, str(SOURCE_DIR))
 
 from automation_hub.tolubay import AdditionalReportItem, TolubayClient, TolubayConfig  # noqa: E402
+from automation_hub.memorial_order_xls import process_memorial_order_xls  # noqa: E402
+
+
+MEMORIAL_ORDER_REPORT = "Сводный мемориальный ордер"
 
 
 @dataclass(frozen=True)
@@ -67,6 +71,48 @@ def load_report_forms(path: Path) -> dict[str, dict[str, Any]]:
     return result
 
 
+def memorial_order_fields(
+    report: dict[str, Any],
+    *,
+    branch_id: str,
+    office_id: str,
+    user_id: str,
+    report_date: str,
+) -> dict[str, str]:
+    """Build the exact read-only fields for one employee's memorial order."""
+    if not all(value.strip() for value in (branch_id, office_id, user_id, report_date)):
+        raise ValueError("Для мемориального ордера заполните филиал, отделение, сотрудника и дату")
+    fields = form_defaults(report["forms"][0]["fields"])
+    fields.update(
+        {
+            "Branch.All": "False",
+            "Branch.Value": branch_id.strip(),
+            "Office.All": "False",
+            "Office.Value": office_id.strip(),
+            "User.All": "False",
+            "User.Value": user_id.strip(),
+            "Currency.All": "True",
+            "OfficeUsersOperations.Value": "False",
+            "IncludeFinalTurnovers.Value": "false",
+            "ReportDate.Date": report_date.strip(),
+            "Value": "XLS",
+        }
+    )
+    return fields
+
+
+def report_select_options(report: dict[str, Any], field_name: str) -> list[dict[str, str]]:
+    """Return non-sensitive name/code pairs captured for an ABS select field."""
+    fields = report["forms"][0]["fields"]
+    for field in fields:
+        if field.get("name") == field_name and field.get("type") == "select-one":
+            return [
+                {"value": str(option["value"]), "label": str(option["text"])}
+                for option in field.get("options") or []
+            ]
+    return []
+
+
 class ReportService:
     def __init__(self, *, insecure: bool) -> None:
         self.insecure = insecure
@@ -105,6 +151,43 @@ class ReportService:
             if report_name not in self.forms or not isinstance(values.get("fields"), dict):
                 raise ValueError("Некорректный стандартный отчёт или параметры")
             title = f"Отчёт: {report_name}"
+        elif kind == "memorial_order":
+            if MEMORIAL_ORDER_REPORT not in self.forms:
+                raise ValueError("В спецификации не найден Сводный мемориальный ордер")
+            branch_id = str(values.get("branch_id", "")).strip()
+            office_id = str(values.get("office_id", "")).strip()
+            report_date = str(values.get("report_date", "")).strip()
+            users = values.get("users")
+            if not isinstance(users, list) or not users:
+                raise ValueError("Добавьте хотя бы одного сотрудника")
+            tasks: list[ReportTask] = []
+            report = self.forms[MEMORIAL_ORDER_REPORT]
+            for user in users:
+                if not isinstance(user, dict):
+                    raise ValueError("Некорректные данные сотрудника")
+                user_id = str(user.get("id", "")).strip()
+                user_name = str(user.get("name", "")).strip() or user_id
+                fields = memorial_order_fields(
+                    report,
+                    branch_id=branch_id,
+                    office_id=office_id,
+                    user_id=user_id,
+                    report_date=report_date,
+                )
+                tasks.append(
+                    ReportTask(
+                        "memorial_order",
+                        f"Мемориальный ордер: {user_name} ({report_date})",
+                        {
+                            "fields": fields,
+                            "user_name": user_name,
+                            "print_after_processing": bool(values.get("print_after_processing")),
+                        },
+                    )
+                )
+            with self.lock:
+                self.tasks.extend(tasks)
+            return
         elif kind == "template":
             if not Path(str(values.get("path", ""))).is_file() or not str(values.get("date", "")).strip():
                 raise ValueError("Выберите существующий XLSX-шаблон и укажите дату")
@@ -158,6 +241,17 @@ class ReportService:
                     output,
                     fallback_name=task.values["report_name"],
                 )
+            elif task.kind == "memorial_order":
+                result = client.execute_report(
+                    self.forms[MEMORIAL_ORDER_REPORT]["forms"][0]["action"],
+                    task.values["fields"],
+                    output,
+                    fallback_name=f"memorial-order-{task.values['user_name']}",
+                )
+                process_memorial_order_xls(
+                    result.path,
+                    print_after_processing=bool(task.values["print_after_processing"]),
+                )
             elif task.kind == "template":
                 result = client.generate_template_report(
                     task.values["path"],
@@ -198,6 +292,9 @@ input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{widt
 <section><h2>Стандартный отчёт</h2><label>Вид отчёта<select id="standard" onchange="setDefaults()"></select></label>
 <label>Параметры JSON (предзаполнены по форме ABS; их можно отредактировать)<textarea id="fields"></textarea></label>
 <button onclick="addStandard()">Добавить в очередь</button></section>
+<section><h2>Документ дня: сводный мемориальный ордер</h2><p class="note">Для каждого сотрудника будет сформирован отдельный XLS-файл.</p><div class="grid">
+<label>Филиал<select id="memorial_branch"></select></label><label>Отделение<select id="memorial_office"></select></label>
+<label>Дата<input id="memorial_date"></label></div><label>Сотрудники: одна строка на человека в виде <code>код ABS | имя для очереди</code><textarea id="memorial_users" placeholder="123 | Иванова А.А."></textarea></label><label><input type="checkbox" id="memorial_print"> Печатать после обработки на принтере Windows по умолчанию</label><button onclick="addMemorialOrder()">Добавить сотрудников в очередь</button></section>
 <section><h2>Отчёт по XLSX-шаблону</h2><div class="grid"><label>Путь к XLSX-шаблону<input id="template_path"></label><label>Дата отчёта<input id="template_date"></label></div>
 <label><input type="checkbox" id="template_cache"> Использовать кэш ABS</label><label><input type="checkbox" id="template_formula"> Формулы как комментарии</label><button onclick="addTemplate()">Добавить в очередь</button></section>
 <section><h2>Дополнительный отчёт</h2><button onclick="loadAdditional()">Загрузить каталог ABS</button><label>Отчёт<select id="additional"></select></label>
@@ -207,22 +304,24 @@ input,select,textarea,button{font:inherit;padding:6px}input,select,textarea{widt
 <script>
 let forms={}, additional=[];
 const today=()=>new Date().toLocaleDateString('ru-RU');
-for(const id of ['statement_start','statement_end','template_date','additional_start','additional_end'])document.getElementById(id).value=today();
+for(const id of ['statement_start','statement_end','template_date','additional_start','additional_end','memorial_date'])document.getElementById(id).value=today();
 async function api(path,data={}){let r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});let x=await r.json();if(!r.ok)throw Error(x.error||'Ошибка');return x}
 function msg(t,c='ok'){let e=document.getElementById('status');e.className=c;e.textContent=t}
 function v(id){return document.getElementById(id).value.trim()}
 function setDefaults(){document.getElementById('fields').value=JSON.stringify(forms[v('standard')].defaults,null,2)}
+function setOptions(id,options){let s=document.getElementById(id);s.innerHTML='';options.forEach(o=>s.add(new Option(o.label,o.value)))}
 function render(q){let e=document.getElementById('queue');e.innerHTML='';q.forEach(t=>{let li=document.createElement('li');li.textContent=t.title+' ';for(const [s,d] of [['↑',-1],['↓',1],['Убрать',0]]){let b=document.createElement('button');b.textContent=s;b.onclick=async()=>{try{await api(d?'/api/move':'/api/remove',{index:t.index,direction:d});refresh()}catch(e){msg(e.message,'error')}};li.append(b)}e.append(li)})}
 async function refresh(){let x=await api('/api/queue');render(x.queue)}
 async function connect(){try{msg('Подключение…');await api('/api/connect',{login:v('login'),password:document.getElementById('password').value});document.getElementById('password').value='';msg('Подключено')}catch(e){msg(e.message,'error')}}
 async function add(kind,values){try{await api('/api/add',{kind,values});refresh()}catch(e){msg(e.message,'error')}}
 function addStatement(){add('statement',{customer_id:v('customer_id'),account_no:v('account_no'),currency_id:v('currency_id'),currency_name:v('currency_name'),start_date:v('statement_start'),end_date:v('statement_end'),output_format:v('statement_format')})}
 function addStandard(){try{add('standard',{report_name:v('standard'),fields:JSON.parse(document.getElementById('fields').value)})}catch(e){msg('Некорректный JSON','error')}}
+function addMemorialOrder(){let users=v('memorial_users').split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{let [id,...name]=line.split('|');return {id:id.trim(),name:name.join('|').trim()}});add('memorial_order',{branch_id:v('memorial_branch'),office_id:v('memorial_office'),report_date:v('memorial_date'),users,print_after_processing:document.getElementById('memorial_print').checked})}
 function addTemplate(){add('template',{path:v('template_path'),date:v('template_date'),cache:document.getElementById('template_cache').checked,formula:document.getElementById('template_formula').checked})}
 async function loadAdditional(){try{let x=await api('/api/additional');additional=x.items;let s=document.getElementById('additional');s.innerHTML='';additional.forEach((a,i)=>s.add(new Option((a.group? a.group+': ':'')+a.name,i)));msg('Каталог загружен')}catch(e){msg(e.message,'error')}}
 function addAdditional(){let a=additional[+v('additional')];if(!a){msg('Сначала загрузите каталог','error');return}add('additional',{name:a.name,type:a.type,start:v('additional_start'),end:v('additional_end')})}
 async function download(){try{msg('Скачивание…');let x=await api('/api/download',{output_dir:v('output')});document.getElementById('result').textContent='Скачано файлов: '+x.paths.length;msg('Готово')}catch(e){msg(e.message,'error')}}
-(async()=>{let x=await api('/api/forms');forms=x.forms;let s=document.getElementById('standard');Object.keys(forms).forEach(n=>s.add(new Option(n,n)));setDefaults();refresh()})()
+(async()=>{let x=await api('/api/forms');forms=x.forms;let s=document.getElementById('standard');Object.keys(forms).forEach(n=>s.add(new Option(n,n)));setOptions('memorial_branch',x.memorial.branch_options);setOptions('memorial_office',x.memorial.office_options);setDefaults();refresh()})()
 </script></body></html>"""
 
 
@@ -261,7 +360,14 @@ def make_handler(service: ReportService) -> type[BaseHTTPRequestHandler]:
                 path = urlparse(self.path).path
                 data = self._body()
                 if path == "/api/forms":
-                    payload = {"forms": {name: {"defaults": form_defaults(report["forms"][0]["fields"])} for name, report in service.forms.items()}}
+                    memorial = service.forms[MEMORIAL_ORDER_REPORT]
+                    payload = {
+                        "forms": {name: {"defaults": form_defaults(report["forms"][0]["fields"])} for name, report in service.forms.items()},
+                        "memorial": {
+                            "branch_options": report_select_options(memorial, "Branch.Value"),
+                            "office_options": report_select_options(memorial, "Office.Value"),
+                        },
+                    }
                 elif path == "/api/connect":
                     service.connect(str(data.get("login", "")), str(data.get("password", "")))
                     payload = {"ok": True}
